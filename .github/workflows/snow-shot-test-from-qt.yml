@@ -257,8 +257,6 @@ jobs:
           $base = "snow-ocr-runtime-$runtime-windows-$env:SNOW_ARCHITECTURE"
           $names += @("$base.zip", "$base.zip.sha256", "$base.manifest.json")
           $packages = @($names | ForEach-Object { Get-Item -LiteralPath "build/${{ matrix.preset }}/$_" -ErrorAction Stop })
-          $packages += @(Get-ChildItem build/${{ matrix.preset }}/native-validation -Filter '*.native-validation.json' -File)
-          if (@($packages | Where-Object Name -like '*.native-validation.json').Count -ne 8) { throw 'Missing final package native validation evidence.' }
           $assets = ($packages | ForEach-Object { $_.FullName }) -join "`n"
           "assets<<SNOW_ASSETS" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
           $assets | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
@@ -276,11 +274,26 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Preserve final packages and native validation manifests
+      - name: Preserve final packages
         uses: actions/upload-artifact@v4
         with:
           name: snow-shot-packages-${{ matrix.architecture }}
           path: ${{ steps.package.outputs.assets }}
+          if-no-files-found: error
+
+      - name: Validate final package payloads on the matching native host
+        shell: pwsh
+        run: |
+          ./scripts/test-snow-shot-native-package.ps1 -Architecture $env:SNOW_ARCHITECTURE `
+            -BuildDirectory build/${{ matrix.preset }}
+          $proofs = @(Get-ChildItem build/${{ matrix.preset }}/native-validation -Filter '*.native-validation.json' -File)
+          if ($proofs.Count -ne 8) { throw 'Missing final package native validation evidence.' }
+
+      - name: Preserve native package validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: snow-shot-native-validation-${{ matrix.architecture }}
+          path: build/${{ matrix.preset }}/native-validation/*.native-validation.json
           if-no-files-found: error
 
       - name: Verify focused updater and installer behavior
@@ -335,12 +348,6 @@ jobs:
           ctest --test-dir build/${{ matrix.preset }}/snow_shot -C Release -R '^snow-shot-(update-(adapter-tests|about-tests|settings-tests)|macos-update-tests)$' --output-on-failure --no-tests=error
           if ($LASTEXITCODE -ne 0) { throw "Updater tests failed." }
           & scripts/test-snow-shot-update-helper.ps1 -Architecture $env:SNOW_ARCHITECTURE -HelperPath build/${{ matrix.preset }}/snow_shot/Release/snow-shot-updater.exe
-
-      - name: Validate final package payloads on the matching native host
-        shell: pwsh
-        run: |
-          ./scripts/test-snow-shot-native-package.ps1 -Architecture $env:SNOW_ARCHITECTURE `
-            -BuildDirectory build/${{ matrix.preset }}
 
       - name: Verify focused native architecture functionality
         shell: pwsh

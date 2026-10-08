@@ -2,6 +2,7 @@
 """Run workflow toolchain preparation with isolated Windows tool fixtures."""
 
 import hashlib
+import json
 import os
 from pathlib import Path
 import re
@@ -19,6 +20,62 @@ WORKFLOWS = ('snow-shot-release.yml', 'snow-shot-test-from-qt.yml')
 
 @unittest.skipUnless(os.name == 'nt', 'Windows command fixtures require Windows')
 class WorkflowToolchain(unittest.TestCase):
+    def test_packages_upload_before_native_validation_reports_exist(self):
+        shell = shutil.which('pwsh') or shutil.which('powershell')
+        if not shell:
+            self.skipTest('PowerShell is required')
+        (ROOT / 'build').mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='package-upload-test-', dir=ROOT / 'build') as fixture:
+            directory = Path(fixture)
+            (directory / 'CMakeLists.txt').write_text('set(SNOW_SHOT_VERSION "1.2.4")\n')
+            descriptor = directory / 'snow_shot/packaging/snow-shot-ocr-asset-manifest.json'
+            descriptor.parent.mkdir(parents=True)
+            descriptor.write_text(json.dumps({'runtime': {'version': '1.0.10'}}))
+            packages = directory / 'build/snow-shot-msvc-release'
+            packages.mkdir(parents=True)
+            names = []
+            for product, variants in (('snow-shot', ('online', 'offline')),
+                                      ('snow-shot-mini', ('online',))):
+                for variant in variants:
+                    base = f'{product}-1.2.4-windows-x64-{variant}'
+                    names.extend(base + suffix for suffix in (
+                        '.exe', '.exe.sha256', '.manifest.json', '-update.zip',
+                        '-update.zip.sha256', '-update.manifest.json'))
+                base = f'{product}-1.2.4-windows-x64-portable'
+                names.extend(base + suffix for suffix in ('.zip', '.zip.sha256', '.manifest.json'))
+            base = 'snow-ocr-runtime-1.0.10-windows-x64'
+            names.extend(base + suffix for suffix in ('.zip', '.zip.sha256', '.manifest.json'))
+            for name in names:
+                (packages / name).write_bytes(b'package discovery fixture')
+            for workflow in WORKFLOWS:
+                with self.subTest(workflow=workflow):
+                    source = (ROOT / '.github/workflows' / workflow).read_text(encoding='utf-8')
+                    match = re.search(
+                        r'      - name: Locate packages\n.*?        run: \|\n'
+                        r'((?:          [^\n]*\n|\n)+)', source, re.DOTALL)
+                    self.assertIsNotNone(match)
+                    command = textwrap.dedent(match.group(1))
+                    command = command.replace('${{ matrix.architecture }}', 'x64')
+                    command = command.replace('${{ matrix.preset }}', 'snow-shot-msvc-release')
+                    output = directory / 'github-output.txt'
+                    output.unlink(missing_ok=True)
+                    environment = {**os.environ, 'GITHUB_OUTPUT': str(output),
+                                   'GITHUB_REF_TYPE': 'branch', 'SNOW_ARCHITECTURE': 'x64'}
+                    result = subprocess.run([
+                        shell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                        '-Command', "$ErrorActionPreference = 'Stop'\n" + command,
+                    ], cwd=directory, env=environment, capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    assets = output.read_text(encoding='utf-8-sig').splitlines()
+                    self.assertEqual(set(assets[1:-1]), {str(packages / name) for name in names})
+                    upload = source.index('- name: Preserve final packages')
+                    validation = source.index('- name: Validate final package payloads')
+                    evidence = source.index('- name: Preserve native package validation evidence')
+                    self.assertLess(source.index('- name: Build, audit, and package'), upload)
+                    self.assertLess(upload, validation)
+                    self.assertLess(validation, evidence)
+                    self.assertIn(".Count -ne 8", source[validation:evidence])
+
     def test_nsis_selector_supports_portable_and_installed_compilers(self):
         shell = shutil.which('pwsh') or shutil.which('powershell')
         if not shell:
