@@ -67,7 +67,7 @@ jobs:
           . scripts/snow-build-environment.ps1
           $bin = Add-SnowMsvcToolsToPath -Architecture $env:SNOW_ARCHITECTURE
           $compilerHash = (Get-FileHash (Join-Path $bin 'cl.exe') -Algorithm SHA256).Hash
-          $cmakeCommand = Get-Command cmake -CommandType Application -ErrorAction Stop
+          $cmakeCommand = Get-Command cmake -CommandType Application -ErrorAction Stop | Select-Object -First 1
           $cmakeOutput = & $cmakeCommand.Source --version
           if ($LASTEXITCODE -ne 0) { throw 'Could not identify CMake.' }
           $cmakeVersion = ($cmakeOutput | Select-Object -First 1) -replace '[^a-zA-Z0-9.-]', '-'

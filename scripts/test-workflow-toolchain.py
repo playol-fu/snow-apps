@@ -36,7 +36,16 @@ function Add-SnowMsvcToolsToPath {
 }
 ''', encoding='utf-8')
             environment = os.environ.copy()
-            environment['PATH'] = str(directory) + os.pathsep + environment.get('PATH', '')
+            # Get-Command -CommandType Application can return multiple PATH matches.
+            # Keep a competing installation in the fixture even on PCs without CMake.
+            competing = directory / 'other-cmake'
+            competing.mkdir()
+            (competing / 'cmake.cmd').write_text(
+                '@echo off\necho incorrect competing CMake\nexit /b 9\n', encoding='ascii',
+            )
+            environment['PATH'] = os.pathsep.join(
+                (str(directory), str(competing), environment.get('PATH', ''))
+            )
             environment['SNOW_ARCHITECTURE'] = 'x64'
             output = directory / 'github-output.txt'
             environment['GITHUB_OUTPUT'] = str(output)
