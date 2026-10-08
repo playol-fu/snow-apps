@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Run workflow toolchain detection with isolated Windows tool fixtures."""
+"""Run workflow toolchain preparation with isolated Windows tool fixtures."""
 
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -9,6 +10,7 @@ import subprocess
 import tempfile
 import textwrap
 import unittest
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +19,73 @@ WORKFLOWS = ('snow-shot-release.yml', 'snow-shot-test-from-qt.yml')
 
 @unittest.skipUnless(os.name == 'nt', 'Windows command fixtures require Windows')
 class WorkflowToolchain(unittest.TestCase):
+    def test_nsis_mirrors_reject_corrupt_archives_before_extraction(self):
+        shell = shutil.which('pwsh') or shutil.which('powershell')
+        if not shell:
+            self.skipTest('PowerShell is required')
+        (ROOT / 'build').mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='nsis-mirror-test-', dir=ROOT / 'build') as fixture:
+            directory = Path(fixture)
+            archive = directory / 'fixture.zip'
+            with zipfile.ZipFile(archive, 'w') as bundle:
+                bundle.writestr('nsis-3.12/makensis.cmd',
+                                '@echo off\necho v3.12-fixture\nexit /b 0\n')
+            digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+            for workflow in WORKFLOWS:
+                source = (ROOT / '.github/workflows' / workflow).read_text(encoding='utf-8')
+                match = re.search(
+                    r'      - name: Prepare NSIS packaging compiler on the runner\n'
+                    r'.*?        run: \|\n((?:          [^\n]*\n|\n)+)', source, re.DOTALL,
+                )
+                self.assertIsNotNone(match, workflow)
+                command = textwrap.dedent(match.group(1))
+                command = re.sub(r"\$expected = '[a-f0-9]{64}'",
+                                 f"$expected = '{digest}'", command)
+                # Use a batch fixture rather than downloading or installing a compiler.
+                command = command.replace('makensis.exe', 'makensis.cmd')
+                for mode in ('corrupt-first', 'network-first', 'all-corrupt'):
+                    with self.subTest(workflow=workflow, download=mode):
+                        workspace = directory / (workflow.removesuffix('.yml') + '-' + mode)
+                        (workspace / '.tools').mkdir(parents=True)
+                        output = workspace / 'github-path.txt'
+                        environment = {**os.environ, 'GITHUB_WORKSPACE': str(workspace),
+                                       'GITHUB_PATH': str(output), 'NSIS_FIXTURE': str(archive),
+                                       'NSIS_RESPONSE_MODE': mode}
+                        mock = """
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+$script:attempt = 0
+function Invoke-WebRequest {
+    param([string]$Uri, [string]$OutFile, [int]$TimeoutSec, [string]$UserAgent)
+    $script:attempt += 1
+    if ($script:attempt -eq 1 -and $env:NSIS_RESPONSE_MODE -eq 'network-first') {
+        throw 'Simulated mirror timeout.'
+    }
+    if ($env:NSIS_RESPONSE_MODE -eq 'all-corrupt' -or $script:attempt -eq 1) {
+        [IO.File]::WriteAllText($OutFile, '<html>Download unavailable</html>')
+    } else {
+        Copy-Item -LiteralPath $env:NSIS_FIXTURE -Destination $OutFile
+    }
+}
+"""
+                        result = subprocess.run([
+                            shell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                            '-Command', mock + command,
+                        ], cwd=workspace, env=environment, capture_output=True, text=True, timeout=30)
+                        compiler = workspace / '.tools/nsis-3.12/makensis.cmd'
+                        if mode == 'all-corrupt':
+                            self.assertNotEqual(result.returncode, 0)
+                            self.assertIn('No verified NSIS portable archive', result.stderr)
+                            self.assertFalse(compiler.exists())
+                            self.assertFalse(output.exists())
+                        else:
+                            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                            self.assertIn('v3.12-fixture', result.stdout)
+                            self.assertTrue(compiler.exists())
+                            data = output.read_bytes()
+                            encoding = 'utf-16' if data.startswith(b'\xff\xfe') else 'utf-8-sig'
+                            self.assertEqual(data.decode(encoding).strip(), str(compiler.parent))
+
     def test_dependency_cache_restores_into_an_existing_vcpkg_checkout(self):
         shell = shutil.which('pwsh') or shutil.which('powershell')
         git = shutil.which('git')
