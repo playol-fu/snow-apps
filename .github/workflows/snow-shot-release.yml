@@ -1,12 +1,13 @@
-name: Snow Shot Static Release
+name: Build Snow Shot EXE
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - "v*_snow-shot"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: snow-shot-release-${{ github.ref_name }}
@@ -204,12 +205,12 @@ jobs:
             -R '^snow-shot-(clipboard-content|direct-capture-native|capture-worker|recording-post-processing|diagnostics-crash|ocr-(cpu-recognition-service|directml-recognition-service|managed-runtime|managed-directml-runtime|crash|assets))-tests$'
           if ($LASTEXITCODE -ne 0) { throw 'Native architecture functional tests failed.' }
 
-      - name: Verify tag and locate package
+      - name: Locate packages
         id: package
         shell: pwsh
         run: |
           $version = [regex]::Match((Get-Content -Raw CMakeLists.txt), 'set\(SNOW_SHOT_VERSION "([^"]+)"\)').Groups[1].Value
-          if ($env:GITHUB_REF_NAME -cne "v${version}_snow-shot") {
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -cne "v${version}_snow-shot") {
             throw "Unexpected release tag: $env:GITHUB_REF_NAME"
           }
           $names = @()
@@ -238,7 +239,7 @@ jobs:
       - name: Preserve matching release symbols separately
         uses: actions/upload-artifact@v4
         with:
-          name: snow-shot-symbols-${{ matrix.architecture }}-${{ github.ref_name }}
+          name: snow-shot-symbols-${{ matrix.architecture }}-${{ github.run_id }}
           path: |
             build/${{ matrix.preset }}/snow-shot-symbols-windows-${{ matrix.architecture }}.zip
             build/${{ matrix.preset }}/snow-shot-symbols-windows-${{ matrix.architecture }}.zip.sha256
@@ -253,119 +254,3 @@ jobs:
           name: snow-shot-packages-${{ matrix.architecture }}
           path: ${{ steps.package.outputs.assets }}
           if-no-files-found: error
-
-  cross:
-    name: Cross build Windows ARM64 on x64
-    needs: build
-    runs-on: windows-2025-vs2026
-    env:
-      VCPKG_BINARY_SOURCES: clear;x-gha,readwrite
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install x64 Rust host and ARM64 target
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.97.1
-          target: aarch64-pc-windows-msvc
-      - name: Install Python build helper
-        shell: pwsh
-        run: python -m pip install --disable-pip-version-check virtualenv
-      - name: Export GitHub Actions cache service
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-      - name: Resolve Qt version and cross host
-        id: qt-toolchain
-        shell: pwsh
-        run: |
-          . ./scripts/snow-build-environment.ps1
-          if ((Get-SnowWindowsHostArchitecture) -cne 'x64') { throw 'The ARM64 cross build requires an x64 host.' }
-          "version=$script:SnowQtVersion" >> $env:GITHUB_OUTPUT
-      - name: Restore native x64 Qt host tools
-        uses: actions/cache/restore@v4
-        with:
-          path: ${{ runner.tool_cache }}\snow-qt\${{ steps.qt-toolchain.outputs.version }}\msvc2026_64-static-system-codecs
-          key: snow-qt-static-system-codecs-v6-development-${{ steps.qt-toolchain.outputs.version }}-msvc2026-x64-${{ runner.os }}-${{ hashFiles('scripts/qt-toolchain.json', 'scripts/build-static-qt.ps1', 'scripts/snow-build-environment.ps1', 'scripts/static-qt-features.json', 'scripts/qtbase-timezone-without-cldr.patch', 'scripts/bootstrap.ps1', 'vcpkg.json', 'cmake/vcpkg-overlay-triplets/*-windows-static.cmake', 'cmake/vcpkg-overlay-ports/zlib/**') }}
-          fail-on-cache-miss: true
-      - name: Provision ARM64 dependencies for the x64 host
-        shell: pwsh
-        run: ./scripts/bootstrap.ps1 -Architecture arm64 -VcpkgVariants Static -SkipQtValidation
-      - name: Cache the separate cross compiled ARM64 Qt target kit
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.tool_cache }}\snow-qt-cross-x64\${{ steps.qt-toolchain.outputs.version }}\msvc2026_arm64-static-system-codecs
-          key: snow-qt-static-system-codecs-v6-cross-x64-arm64-${{ steps.qt-toolchain.outputs.version }}-msvc2026-${{ runner.os }}-${{ hashFiles('scripts/qt-toolchain.json', 'scripts/build-static-qt.ps1', 'scripts/snow-build-environment.ps1', 'scripts/static-qt-features.json', 'scripts/qtbase-timezone-without-cldr.patch', 'scripts/bootstrap.ps1', 'vcpkg.json', 'cmake/vcpkg-overlay-triplets/*-windows-static.cmake', 'cmake/vcpkg-overlay-ports/zlib/**') }}
-      - name: Build ARM64 Qt with the restored x64 host kit
-        shell: pwsh
-        run: |
-          . ./scripts/snow-build-environment.ps1
-          $hostPrefix = Join-Path $env:RUNNER_TOOL_CACHE "snow-qt\$script:SnowQtVersion\msvc2026_64-static-system-codecs"
-          $prefix = Join-Path $env:RUNNER_TOOL_CACHE "snow-qt-cross-x64\$script:SnowQtVersion\msvc2026_arm64-static-system-codecs"
-          $dependencies = Join-Path $env:GITHUB_WORKSPACE '.tools/vcpkg/installed/arm64/static/arm64-windows-static'
-          ./scripts/build-static-qt.ps1 -Architecture arm64 -InstallPrefix $prefix `
-            -DependencyPrefix $dependencies -HostQtPrefix $hostPrefix
-          "SNOW_QT_HOST_PREFIX=$hostPrefix" >> $env:GITHUB_ENV
-          "QT_HOST_PATH=$hostPrefix" >> $env:GITHUB_ENV
-          "SNOW_QT_STATIC_DIR=$prefix\lib\cmake\Qt6" >> $env:GITHUB_ENV
-          "Qt6_DIR=$prefix\lib\cmake\Qt6" >> $env:GITHUB_ENV
-      - name: Cross build and package with static audits
-        shell: pwsh
-        run: |
-          ./scripts/stage-snow-shot-release.ps1 -Architecture arm64
-          $manifests = @(Get-ChildItem build/snow-shot-msvc-arm64-release -Filter 'snow-shot*-windows-arm64-*.manifest.json')
-          if ($manifests.Count -ne 8) { throw 'The cross build must package all Full and Mini variants.' }
-          foreach ($file in $manifests) {
-            $manifest = Get-Content -Raw -LiteralPath $file.FullName | ConvertFrom-Json
-            if ($manifest.Architecture -cne 'arm64' -or $manifest.NativeValidationRequired -ne $true -or
-                $manifest.NativeValidation.Passed -ne $false -or $manifest.NativeValidation.HostPlatform -cne 'windows-x64') {
-              throw 'A cross package must retain static-only evidence and require native validation.'
-            }
-          }
-      - name: Preserve cross package audit manifests separately
-        uses: actions/upload-artifact@v4
-        with:
-          name: snow-shot-cross-arm64-static-audits
-          path: build/snow-shot-msvc-arm64-release/snow-shot*-windows-arm64-*.manifest.json
-          if-no-files-found: error
-
-  draft:
-    name: Assemble both Windows architectures for local signing
-    needs: [build, cross]
-    runs-on: windows-2025-vs2026
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: snow-shot-packages-*
-          path: build/release-assets
-          merge-multiple: true
-      # The local publisher signs all four architecture/product feeds and rechecks native proof.
-      # CI never receives the private release signing key or publishes a release automatically.
-      - name: Create complete draft for local signing and finalization
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $version = [regex]::Match((Get-Content -Raw CMakeLists.txt), 'set\(SNOW_SHOT_VERSION "([^"]+)"\)').Groups[1].Value
-          if ($env:GITHUB_REF_NAME -cne "v${version}_snow-shot") { throw 'Release tag differs from source.' }
-          $assets = @(Get-ChildItem build/release-assets -File | ForEach-Object { $_.FullName })
-          . ./scripts/snow-shot-native-validation.ps1
-          foreach ($architecture in @('x64', 'arm64')) {
-            foreach ($product in @('snow-shot', 'snow-shot-mini')) {
-              $name = "$product-$version-windows-$architecture-online.exe"
-              if (-not (Test-Path -LiteralPath (Join-Path build/release-assets $name))) { throw "Missing $name." }
-            }
-            foreach ($manifestFile in @(Get-ChildItem build/release-assets -Filter "*-windows-$architecture-*.manifest.json" -File)) {
-              $manifest = Get-Content -Raw -LiteralPath $manifestFile.FullName | ConvertFrom-Json
-              $descriptor = if ($manifest.PSObject.Properties['Installer']) { $manifest.Installer } else { $manifest.Archive }
-              $artifact = Join-Path build/release-assets $descriptor.Path
-              $null = Assert-SnowShotNativeValidation -Manifest $manifest -ArtifactPath $artifact `
-                -Platform "windows-$architecture" -ProofDirectory build/release-assets
-            }
-          }
-          $releaseFlags = if (($version -split '\+')[0].Contains('-')) { @('--prerelease') } else { @() }
-          gh release create $env:GITHUB_REF_NAME @assets --draft @releaseFlags --generate-notes `
-            --title "Snow Shot and Snow Shot Mini $env:GITHUB_REF_NAME"
-          if ($LASTEXITCODE -ne 0) { throw 'Could not create release draft.' }
