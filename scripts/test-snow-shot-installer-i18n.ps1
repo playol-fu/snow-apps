@@ -4,7 +4,8 @@ $productName = if ($Edition -eq 'Mini') { 'Snow Shot Mini' } else { 'Snow Shot' 
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$compiler = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
+. (Join-Path $PSScriptRoot 'snow-nsis-environment.ps1')
+$compiler = Get-SnowNsisCompiler
 if (-not (Test-Path -LiteralPath $compiler)) { throw "NSIS is required for installer tests." }
 $testId = [guid]::NewGuid().ToString('N')
 $testRoot = Join-Path $repoRoot "build\installer-i18n-tests-$testId"

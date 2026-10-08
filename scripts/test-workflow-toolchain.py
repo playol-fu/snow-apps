@@ -19,6 +19,41 @@ WORKFLOWS = ('snow-shot-release.yml', 'snow-shot-test-from-qt.yml')
 
 @unittest.skipUnless(os.name == 'nt', 'Windows command fixtures require Windows')
 class WorkflowToolchain(unittest.TestCase):
+    def test_nsis_selector_supports_portable_and_installed_compilers(self):
+        shell = shutil.which('pwsh') or shutil.which('powershell')
+        if not shell:
+            self.skipTest('PowerShell is required')
+        (ROOT / 'build').mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='nsis-selector-test-', dir=ROOT / 'build') as fixture:
+            directory = Path(fixture)
+            portable = directory / 'portable'
+            installed = directory / 'program-files/NSIS'
+            portable.mkdir()
+            installed.mkdir(parents=True)
+            portable_compiler = portable / 'makensis.exe'
+            installed_compiler = installed / 'makensis.exe'
+            # Discovery fixtures are never executed and are not real compilers.
+            portable_compiler.write_bytes(b'discovery fixture')
+            installed_compiler.write_bytes(b'discovery fixture')
+            environment = {**os.environ, 'PATH': str(portable),
+                           'ProgramFiles(x86)': str(installed.parent),
+                           'ProgramFiles': str(directory / 'empty-program-files'),
+                           'NSIS_SELECTOR_SCRIPT': str(ROOT / 'scripts/snow-nsis-environment.ps1')}
+            command = ". $env:NSIS_SELECTOR_SCRIPT\nGet-SnowNsisCompiler"
+            for expected in (portable_compiler, installed_compiler, None):
+                with self.subTest(expected=expected):
+                    result = subprocess.run([
+                        shell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                        '-Command', "$ErrorActionPreference = 'Stop'\n" + command,
+                    ], cwd=directory, env=environment, capture_output=True, text=True, timeout=30)
+                    if expected:
+                        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                        self.assertEqual(result.stdout.strip(), str(expected))
+                        expected.unlink()
+                    else:
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn('NSIS compiler', result.stderr)
+
     def test_nsis_mirrors_reject_corrupt_archives_before_extraction(self):
         shell = shutil.which('pwsh') or shutil.which('powershell')
         if not shell:

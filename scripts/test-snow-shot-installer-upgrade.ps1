@@ -10,7 +10,8 @@ $repo = Split-Path -Parent $PSScriptRoot
 if ((Get-SnowWindowsHostArchitecture) -cne $Architecture) { throw 'Upgrade tests require the matching native host.' }
 $null = Add-SnowMsvcToolsToPath -Architecture $Architecture
 $helper = (Resolve-Path -LiteralPath $HelperPath).Path
-$compiler = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
+. (Join-Path $PSScriptRoot 'snow-nsis-environment.ps1')
+$compiler = Get-SnowNsisCompiler
 $root = Join-Path $repo "build\installer-upgrade-tests-$([guid]::NewGuid().ToString('N'))"
 $executable = if ($Edition -eq 'Mini') { 'snow_shot_mini' } else { 'snow_shot' }
 $updater = if ($Edition -eq 'Mini') { 'snow-shot-mini-updater' } else { 'snow-shot-updater' }

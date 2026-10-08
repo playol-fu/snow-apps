@@ -220,87 +220,18 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'NSIS compiler verification failed.' }
           $nsis >> $env:GITHUB_PATH
 
-      - name: Build, audit, and package statically
-        shell: pwsh
-        run: .\scripts\stage-snow-shot-release.ps1 -Architecture $env:SNOW_ARCHITECTURE
-
-      - name: Verify focused updater and installer behavior
+      - name: Verify portable NSIS installer tooling
         shell: pwsh
         run: |
           . scripts/snow-build-environment.ps1
-          $null = Set-SnowBuildEnvironment -Preset $env:SNOW_PRESET
-          python scripts/test-release-optimization.py
-          if ($LASTEXITCODE -ne 0) { throw "Release optimization policy tests failed." }
-          python scripts/test-release-optimization-pch.py --architecture $(if ($env:SNOW_ARCHITECTURE -eq 'arm64') { 'ARM64' } else { 'x64' }) --toolset "version=14.51"
-          if ($LASTEXITCODE -ne 0) { throw "Mixed optimization precompiled-header tests failed." }
-          python scripts/test-snow-shot-mini-package.py
-          if ($LASTEXITCODE -ne 0) { throw "Full/Mini compression configuration tests failed." }
-          python -m unittest discover -s ant_design_qt/tools/tests -p test_generate_icon_pack.py
-          if ($LASTEXITCODE -ne 0) { throw "Icon pack generator tests failed." }
-          & scripts/test-static-qt-features.ps1
-          python scripts/test-qt-cmake-contract.py
-          if ($LASTEXITCODE -ne 0) { throw "Qt toolchain CMake contract tests failed." }
-          python scripts/test-qt-translation-release.py
-          if ($LASTEXITCODE -ne 0) { throw "Qt stock-dialog translation tests failed." }
-          & scripts/test-performance-qt-environment.ps1
-          & scripts/test-qt-shader-contract.ps1
-          & scripts/test-snow-shot-package-compression.ps1
-          python scripts/test-snow-shot-gitee-release.py
-          if ($LASTEXITCODE -ne 0) { throw "Gitee mirror tests failed." }
-          node scripts/test-macos-installer-parser.js
-          if ($LASTEXITCODE -ne 0) { throw "macOS installer parser tests failed." }
-          & scripts/test-snow-shot-github-release.ps1
-          & scripts/test-snow-shot-arm64-distribution.ps1
-          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --lib service::tests
-          if ($LASTEXITCODE -ne 0) { throw "Updater fallback tests failed." }
-          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --lib github::tests
-          if ($LASTEXITCODE -ne 0) { throw "GitHub transport tests failed." }
-          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --lib gitee::tests
-          if ($LASTEXITCODE -ne 0) { throw "Gitee transport tests failed." }
-          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --test service_protocol
-          if ($LASTEXITCODE -ne 0) { throw 'Updater architecture and service protocol tests failed.' }
-          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --test uninstall
-          if ($LASTEXITCODE -ne 0) { throw 'Updater uninstall and installer bootstrap tests failed.' }
-          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --features mini --test uninstall
-          if ($LASTEXITCODE -ne 0) { throw 'Mini updater uninstall and installer bootstrap tests failed.' }
-          & scripts/test-snow-shot-ocr-release-runtime.ps1
-          & scripts/test-snow-shot-release-symbols.ps1 -Architecture $env:SNOW_ARCHITECTURE -ReleaseHelperPath build/${{ matrix.preset }}/snow_shot/Release/snow-shot-updater.exe
-          & scripts/test-snow-shot-release-symbols.ps1 -Architecture $env:SNOW_ARCHITECTURE -Edition Mini -ReleaseHelperPath build/${{ matrix.preset }}/snow_shot_mini/Release/snow-shot-mini-updater.exe
+          Add-SnowMsvcToolsToPath -Architecture $env:SNOW_ARCHITECTURE | Out-Null
           & scripts/test-snow-shot-installer.ps1 -Architecture $env:SNOW_ARCHITECTURE
-          & scripts/test-snow-shot-installer-upgrade.ps1 -Architecture $env:SNOW_ARCHITECTURE -HelperPath build/${{ matrix.preset }}/snow_shot/Release/snow-shot-updater.exe
-          & scripts/test-snow-shot-installer-upgrade.ps1 -Architecture $env:SNOW_ARCHITECTURE -Edition Mini -HelperPath build/${{ matrix.preset }}/snow_shot_mini/Release/snow-shot-mini-updater.exe
           & scripts/test-snow-shot-installer-i18n.ps1
           & scripts/test-snow-shot-installer-i18n.ps1 -Edition Mini
-          & scripts/test-snow-shot-mini-release.ps1
-          cmake --preset $env:SNOW_PRESET -DSNOW_SHOT_BUILD_UPDATE_TESTS=ON
-          if ($LASTEXITCODE -ne 0) { throw "Updater test configuration failed." }
-          cmake --build --preset "build-$env:SNOW_PRESET" --target snow-shot-update-adapter-tests snow-shot-macos-update-tests snow-shot-update-about-tests snow-shot-update-settings-tests --parallel 4
-          if ($LASTEXITCODE -ne 0) { throw "Updater test build failed." }
-          ctest --test-dir build/${{ matrix.preset }}/snow_shot -C Release -R '^snow-shot-(update-(adapter-tests|about-tests|settings-tests)|macos-update-tests)$' --output-on-failure --no-tests=error
-          if ($LASTEXITCODE -ne 0) { throw "Updater tests failed." }
-          & scripts/test-snow-shot-update-helper.ps1 -Architecture $env:SNOW_ARCHITECTURE -HelperPath build/${{ matrix.preset }}/snow_shot/Release/snow-shot-updater.exe
 
-      - name: Validate final package payloads on the matching native host
+      - name: Build, audit, and package statically
         shell: pwsh
-        run: |
-          ./scripts/test-snow-shot-native-package.ps1 -Architecture $env:SNOW_ARCHITECTURE `
-            -BuildDirectory build/${{ matrix.preset }}
-
-      - name: Verify focused native architecture functionality
-        shell: pwsh
-        run: |
-          . ./scripts/snow-build-environment.ps1
-          $null = Set-SnowBuildEnvironment -Preset $env:SNOW_PRESET
-          cmake --preset $env:SNOW_PRESET -DSNOW_APPS_BUILD_TESTS=ON
-          if ($LASTEXITCODE -ne 0) { throw 'Native functional test configuration failed.' }
-          cmake --build --preset "build-$env:SNOW_PRESET" --parallel 4 --target `
-            snow-shot-clipboard-content-tests snow-shot-direct-capture-native-tests `
-            snow-shot-capture-worker-tests snow-shot-screen-recording-controller-tests `
-            snow-shot-diagnostics-crash-tests snow-shot-ocr-recognition-service-tests snow-shot-ocr-assets-tests
-          if ($LASTEXITCODE -ne 0) { throw 'Native functional test build failed.' }
-          ctest --test-dir build/${{ matrix.preset }}/snow_shot -C Release --output-on-failure --no-tests=error `
-            -R '^snow-shot-(clipboard-content|direct-capture-native|capture-worker|recording-post-processing|diagnostics-crash|ocr-(cpu-recognition-service|directml-recognition-service|managed-runtime|managed-directml-runtime|crash|assets))-tests$'
-          if ($LASTEXITCODE -ne 0) { throw 'Native architecture functional tests failed.' }
+        run: .\scripts\stage-snow-shot-release.ps1 -Architecture $env:SNOW_ARCHITECTURE
 
       - name: Locate packages
         id: package
@@ -351,3 +282,78 @@ jobs:
           name: snow-shot-packages-${{ matrix.architecture }}
           path: ${{ steps.package.outputs.assets }}
           if-no-files-found: error
+
+      - name: Verify focused updater and installer behavior
+        shell: pwsh
+        run: |
+          . scripts/snow-build-environment.ps1
+          $null = Set-SnowBuildEnvironment -Preset $env:SNOW_PRESET
+          python scripts/test-release-optimization.py
+          if ($LASTEXITCODE -ne 0) { throw "Release optimization policy tests failed." }
+          python scripts/test-release-optimization-pch.py --architecture $(if ($env:SNOW_ARCHITECTURE -eq 'arm64') { 'ARM64' } else { 'x64' }) --toolset "version=14.51"
+          if ($LASTEXITCODE -ne 0) { throw "Mixed optimization precompiled-header tests failed." }
+          python scripts/test-snow-shot-mini-package.py
+          if ($LASTEXITCODE -ne 0) { throw "Full/Mini compression configuration tests failed." }
+          python -m unittest discover -s ant_design_qt/tools/tests -p test_generate_icon_pack.py
+          if ($LASTEXITCODE -ne 0) { throw "Icon pack generator tests failed." }
+          & scripts/test-static-qt-features.ps1
+          python scripts/test-qt-cmake-contract.py
+          if ($LASTEXITCODE -ne 0) { throw "Qt toolchain CMake contract tests failed." }
+          python scripts/test-qt-translation-release.py
+          if ($LASTEXITCODE -ne 0) { throw "Qt stock-dialog translation tests failed." }
+          & scripts/test-performance-qt-environment.ps1
+          & scripts/test-qt-shader-contract.ps1
+          & scripts/test-snow-shot-package-compression.ps1
+          python scripts/test-snow-shot-gitee-release.py
+          if ($LASTEXITCODE -ne 0) { throw "Gitee mirror tests failed." }
+          node scripts/test-macos-installer-parser.js
+          if ($LASTEXITCODE -ne 0) { throw "macOS installer parser tests failed." }
+          & scripts/test-snow-shot-github-release.ps1
+          & scripts/test-snow-shot-arm64-distribution.ps1
+          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --lib service::tests
+          if ($LASTEXITCODE -ne 0) { throw "Updater fallback tests failed." }
+          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --lib github::tests
+          if ($LASTEXITCODE -ne 0) { throw "GitHub transport tests failed." }
+          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --lib gitee::tests
+          if ($LASTEXITCODE -ne 0) { throw "Gitee transport tests failed." }
+          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --test service_protocol
+          if ($LASTEXITCODE -ne 0) { throw 'Updater architecture and service protocol tests failed.' }
+          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --test uninstall
+          if ($LASTEXITCODE -ne 0) { throw 'Updater uninstall and installer bootstrap tests failed.' }
+          cargo test --manifest-path snow_shot/rust/snow-shot-updater/Cargo.toml --features mini --test uninstall
+          if ($LASTEXITCODE -ne 0) { throw 'Mini updater uninstall and installer bootstrap tests failed.' }
+          & scripts/test-snow-shot-ocr-release-runtime.ps1
+          & scripts/test-snow-shot-release-symbols.ps1 -Architecture $env:SNOW_ARCHITECTURE -ReleaseHelperPath build/${{ matrix.preset }}/snow_shot/Release/snow-shot-updater.exe
+          & scripts/test-snow-shot-release-symbols.ps1 -Architecture $env:SNOW_ARCHITECTURE -Edition Mini -ReleaseHelperPath build/${{ matrix.preset }}/snow_shot_mini/Release/snow-shot-mini-updater.exe
+          & scripts/test-snow-shot-installer-upgrade.ps1 -Architecture $env:SNOW_ARCHITECTURE -HelperPath build/${{ matrix.preset }}/snow_shot/Release/snow-shot-updater.exe
+          & scripts/test-snow-shot-installer-upgrade.ps1 -Architecture $env:SNOW_ARCHITECTURE -Edition Mini -HelperPath build/${{ matrix.preset }}/snow_shot_mini/Release/snow-shot-mini-updater.exe
+          & scripts/test-snow-shot-mini-release.ps1
+          cmake --preset $env:SNOW_PRESET -DSNOW_SHOT_BUILD_UPDATE_TESTS=ON
+          if ($LASTEXITCODE -ne 0) { throw "Updater test configuration failed." }
+          cmake --build --preset "build-$env:SNOW_PRESET" --target snow-shot-update-adapter-tests snow-shot-macos-update-tests snow-shot-update-about-tests snow-shot-update-settings-tests --parallel 4
+          if ($LASTEXITCODE -ne 0) { throw "Updater test build failed." }
+          ctest --test-dir build/${{ matrix.preset }}/snow_shot -C Release -R '^snow-shot-(update-(adapter-tests|about-tests|settings-tests)|macos-update-tests)$' --output-on-failure --no-tests=error
+          if ($LASTEXITCODE -ne 0) { throw "Updater tests failed." }
+          & scripts/test-snow-shot-update-helper.ps1 -Architecture $env:SNOW_ARCHITECTURE -HelperPath build/${{ matrix.preset }}/snow_shot/Release/snow-shot-updater.exe
+
+      - name: Validate final package payloads on the matching native host
+        shell: pwsh
+        run: |
+          ./scripts/test-snow-shot-native-package.ps1 -Architecture $env:SNOW_ARCHITECTURE `
+            -BuildDirectory build/${{ matrix.preset }}
+
+      - name: Verify focused native architecture functionality
+        shell: pwsh
+        run: |
+          . ./scripts/snow-build-environment.ps1
+          $null = Set-SnowBuildEnvironment -Preset $env:SNOW_PRESET
+          cmake --preset $env:SNOW_PRESET -DSNOW_APPS_BUILD_TESTS=ON
+          if ($LASTEXITCODE -ne 0) { throw 'Native functional test configuration failed.' }
+          cmake --build --preset "build-$env:SNOW_PRESET" --parallel 4 --target `
+            snow-shot-clipboard-content-tests snow-shot-direct-capture-native-tests `
+            snow-shot-capture-worker-tests snow-shot-screen-recording-controller-tests `
+            snow-shot-diagnostics-crash-tests snow-shot-ocr-recognition-service-tests snow-shot-ocr-assets-tests
+          if ($LASTEXITCODE -ne 0) { throw 'Native functional test build failed.' }
+          ctest --test-dir build/${{ matrix.preset }}/snow_shot -C Release --output-on-failure --no-tests=error `
+            -R '^snow-shot-(clipboard-content|direct-capture-native|capture-worker|recording-post-processing|diagnostics-crash|ocr-(cpu-recognition-service|directml-recognition-service|managed-runtime|managed-directml-runtime|crash|assets))-tests$'
+          if ($LASTEXITCODE -ne 0) { throw 'Native architecture functional tests failed.' }

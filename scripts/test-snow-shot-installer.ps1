@@ -3,7 +3,8 @@ param([switch]$ReproduceOnly, [ValidateSet('x64', 'arm64')][string]$Architecture
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$compiler = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
+. (Join-Path $PSScriptRoot 'snow-nsis-environment.ps1')
+$compiler = Get-SnowNsisCompiler
 if (-not (Test-Path -LiteralPath $compiler)) { throw "NSIS is required for installer tests." }
 $testRoot = Join-Path $repoRoot "build\installer-tests-$([guid]::NewGuid().ToString('N'))"
 New-Item -ItemType Directory -Path $testRoot | Out-Null

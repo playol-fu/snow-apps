@@ -59,23 +59,9 @@ function Assert-SnowNativeStartup {
     }
 }
 
-$nsisCommand = Get-Command makensis -ErrorAction SilentlyContinue
-if (-not $nsisCommand) {
-    $nsisCandidates = @(
-        "${env:ProgramFiles(x86)}\NSIS\makensis.exe",
-        "${env:ProgramFiles}\NSIS\makensis.exe"
-    )
-    $nsisPath = $nsisCandidates |
-        Where-Object { Test-Path -LiteralPath $_ } |
-        Select-Object -First 1
-    if ($nsisPath) {
-        $env:Path = "$(Split-Path -Parent $nsisPath);$env:Path"
-        $nsisCommand = Get-Command makensis -ErrorAction SilentlyContinue
-    }
-}
-if (-not $nsisCommand) {
-    throw "NSIS compiler 'makensis' was not found. Install NSIS before packaging Snow Shot."
-}
+. (Join-Path $PSScriptRoot 'snow-nsis-environment.ps1')
+$nsisPath = Get-SnowNsisCompiler
+$env:Path = "$(Split-Path -Parent $nsisPath);$env:Path"
 
 function Resolve-RepoPath {
     param([Parameter(Mandatory = $true)][string]$Path)

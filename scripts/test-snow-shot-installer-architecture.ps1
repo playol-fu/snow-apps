@@ -3,7 +3,8 @@
 param()
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-$compiler = Join-Path ${env:ProgramFiles(x86)} 'NSIS/makensis.exe'
+. (Join-Path $PSScriptRoot 'snow-nsis-environment.ps1')
+$compiler = Get-SnowNsisCompiler
 if (-not (Test-Path -LiteralPath $compiler)) { throw 'NSIS is required for architecture tests.' }
 $root = Join-Path $repo ("build/installer-architecture-tests-" + [guid]::NewGuid().ToString('N'))
 $null = New-Item -ItemType Directory -Path $root
