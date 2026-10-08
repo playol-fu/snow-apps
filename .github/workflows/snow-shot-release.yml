@@ -26,12 +26,6 @@ jobs:
             rust-target: x86_64-pc-windows-msvc
             qt-kit: msvc2026_64-static-system-codecs
             installed-root: .tools/vcpkg/installed/static
-          - architecture: arm64
-            runner: windows-11-vs2026-arm
-            preset: snow-shot-msvc-arm64-release
-            rust-target: aarch64-pc-windows-msvc
-            qt-kit: msvc2026_arm64-static-system-codecs
-            installed-root: .tools/vcpkg/installed/arm64/static
     runs-on: ${{ matrix.runner }}
     env:
       VCPKG_BINARY_SOURCES: clear
@@ -42,6 +36,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Verify workflow toolchain detection
+        shell: pwsh
+        run: |
+          python scripts/test-workflow-toolchain.py
+          if ($LASTEXITCODE -ne 0) { throw 'Workflow toolchain regression test failed.' }
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -60,15 +60,6 @@ jobs:
           python scripts/test-static-qt-download.py
           if ($LASTEXITCODE -ne 0) { throw "Qt source downloader regression test failed." }
 
-      - name: Provision and validate native ARM64 libclang
-        if: matrix.architecture == 'arm64'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $bin = ./scripts/initialize-snow-shot-arm64-libclang.ps1
-          "LIBCLANG_PATH=$bin" >> $env:GITHUB_ENV
-
       - name: Identify installed build toolchain
         id: toolchain
         shell: pwsh
@@ -76,8 +67,10 @@ jobs:
           . scripts/snow-build-environment.ps1
           $bin = Add-SnowMsvcToolsToPath -Architecture $env:SNOW_ARCHITECTURE
           $compilerHash = (Get-FileHash (Join-Path $bin 'cl.exe') -Algorithm SHA256).Hash
-          $cmakeVersion = (cmake --version | Select-Object -First 1) -replace '[^a-zA-Z0-9.-]', '-'
+          $cmakeCommand = Get-Command cmake -CommandType Application -ErrorAction Stop
+          $cmakeOutput = & $cmakeCommand.Source --version
           if ($LASTEXITCODE -ne 0) { throw 'Could not identify CMake.' }
+          $cmakeVersion = ($cmakeOutput | Select-Object -First 1) -replace '[^a-zA-Z0-9.-]', '-'
           "fingerprint=$compilerHash-$env:WindowsSDKVersion-$cmakeVersion".Replace('\', '') >> $env:GITHUB_OUTPUT
 
       - name: Restore static project dependencies

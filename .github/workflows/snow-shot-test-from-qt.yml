@@ -42,6 +42,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify workflow toolchain detection
+        shell: pwsh
+        run: |
+          python scripts/test-workflow-toolchain.py
+          if ($LASTEXITCODE -ne 0) { throw 'Workflow toolchain regression test failed.' }
+
       - name: Identify installed build toolchain
         id: toolchain
         shell: pwsh
@@ -49,8 +55,10 @@ jobs:
           . scripts/snow-build-environment.ps1
           $bin = Add-SnowMsvcToolsToPath -Architecture $env:SNOW_ARCHITECTURE
           $compilerHash = (Get-FileHash (Join-Path $bin 'cl.exe') -Algorithm SHA256).Hash
-          $cmakeVersion = (cmake --version | Select-Object -First 1) -replace '[^a-zA-Z0-9.-]', '-'
+          $cmakeCommand = Get-Command cmake -CommandType Application -ErrorAction Stop
+          $cmakeOutput = & $cmakeCommand.Source --version
           if ($LASTEXITCODE -ne 0) { throw 'Could not identify CMake.' }
+          $cmakeVersion = ($cmakeOutput | Select-Object -First 1) -replace '[^a-zA-Z0-9.-]', '-'
           "fingerprint=$compilerHash-$env:WindowsSDKVersion-$cmakeVersion".Replace('\', '') >> $env:GITHUB_OUTPUT
 
       - name: Restore static project dependencies
