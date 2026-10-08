@@ -136,6 +136,10 @@ function Save-RemoteFile {
         [Parameter(Mandatory = $true)][string]$Destination
     )
 
+    $Destination = [System.IO.Path]::GetFullPath($Destination)
+    $destinationParent = [System.IO.Path]::GetDirectoryName($Destination)
+    [System.IO.Directory]::CreateDirectory($destinationParent) | Out-Null
+
     $client = [System.Net.Http.HttpClient]::new()
     $client.Timeout = [TimeSpan]::FromHours(2)
     $response = $null
@@ -147,7 +151,7 @@ function Save-RemoteFile {
             $Uri,
             [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead
         ).GetAwaiter().GetResult()
-        $response.EnsureSuccessStatusCode()
+        $response.EnsureSuccessStatusCode() | Out-Null
         $contentLength = $response.Content.Headers.ContentLength
         $inputStream = $response.Content.ReadAsStreamAsync().GetAwaiter().GetResult()
         $outputStream = [System.IO.File]::Open(

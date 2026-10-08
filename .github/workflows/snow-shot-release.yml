@@ -54,6 +54,12 @@ jobs:
         shell: pwsh
         run: python -m pip install --disable-pip-version-check virtualenv
 
+      - name: Verify Qt source downloader
+        shell: pwsh
+        run: |
+          python scripts/test-static-qt-download.py
+          if ($LASTEXITCODE -ne 0) { throw "Qt source downloader regression test failed." }
+
       - name: Provision and validate native ARM64 libclang
         if: matrix.architecture == 'arm64'
         shell: pwsh
