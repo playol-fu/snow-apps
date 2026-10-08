@@ -62,6 +62,13 @@ jobs:
           $cmakeVersion = ($cmakeOutput | Select-Object -First 1) -replace '[^a-zA-Z0-9.-]', '-'
           "fingerprint=$compilerHash-$env:WindowsSDKVersion-$cmakeVersion".Replace('\', '') >> $env:GITHUB_OUTPUT
 
+      - name: Prepare repository-managed vcpkg checkout
+        shell: pwsh
+        run: |
+          $vcpkgRoot = Join-Path $env:GITHUB_WORKSPACE '.tools/vcpkg'
+          git clone --depth=1 https://github.com/microsoft/vcpkg.git $vcpkgRoot
+          if ($LASTEXITCODE -ne 0) { throw 'Could not prepare repository-local vcpkg.' }
+
       - name: Restore static project dependencies
         id: dependencies
         uses: actions/cache/restore@v4
