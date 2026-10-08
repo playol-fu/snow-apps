@@ -28,8 +28,8 @@ class WorkflowToolchain(unittest.TestCase):
             directory = Path(fixture)
             archive = directory / 'fixture.zip'
             with zipfile.ZipFile(archive, 'w') as bundle:
-                bundle.writestr('nsis-3.12/makensis.cmd',
-                                '@echo off\necho v3.12-fixture\nexit /b 0\n')
+                bundle.writestr('nsis-3.11/makensis.cmd',
+                                '@echo off\necho v3.11-fixture\nexit /b 0\n')
             digest = hashlib.sha256(archive.read_bytes()).hexdigest()
             for workflow in WORKFLOWS:
                 source = (ROOT / '.github/workflows' / workflow).read_text(encoding='utf-8')
@@ -72,7 +72,7 @@ function Invoke-WebRequest {
                             shell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
                             '-Command', mock + command,
                         ], cwd=workspace, env=environment, capture_output=True, text=True, timeout=30)
-                        compiler = workspace / '.tools/nsis-3.12/makensis.cmd'
+                        compiler = workspace / '.tools/nsis-3.11/makensis.cmd'
                         if mode == 'all-corrupt':
                             self.assertNotEqual(result.returncode, 0)
                             self.assertIn('No verified NSIS portable archive', result.stderr)
@@ -80,7 +80,7 @@ function Invoke-WebRequest {
                             self.assertFalse(output.exists())
                         else:
                             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                            self.assertIn('v3.12-fixture', result.stdout)
+                            self.assertIn('v3.11-fixture', result.stdout)
                             self.assertTrue(compiler.exists())
                             data = output.read_bytes()
                             encoding = 'utf-16' if data.startswith(b'\xff\xfe') else 'utf-8-sig'
