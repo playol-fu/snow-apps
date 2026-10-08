@@ -98,10 +98,22 @@ function Invoke-WebRequest {
             upstream.mkdir()
             subprocess.run([git, 'init', '--quiet', str(upstream)], check=True)
             (upstream / 'vcpkg-source.txt').write_text('pinned checkout fixture\n')
+            port = upstream / 'ports/fixture/portfile.cmake'
+            port.parent.mkdir(parents=True)
+            port.write_text('set(PORT_VERSION original)\n')
             subprocess.run([git, '-C', str(upstream), 'add', '.'], check=True)
             subprocess.run([
                 git, '-C', str(upstream), '-c', 'user.name=Fixture',
                 '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'fixture',
+            ], check=True)
+            historical_tree = subprocess.check_output([
+                git, '-C', str(upstream), 'rev-parse', 'HEAD:ports/fixture',
+            ], text=True).strip()
+            port.write_text('set(PORT_VERSION updated)\n')
+            subprocess.run([git, '-C', str(upstream), 'add', '.'], check=True)
+            subprocess.run([
+                git, '-C', str(upstream), '-c', 'user.name=Fixture',
+                '-c', 'user.email=fixture@example.invalid', 'commit', '--quiet', '-m', 'update port',
             ], check=True)
             bootstrap = (ROOT / 'scripts/bootstrap.ps1').read_text(encoding='utf-8')
             clone_guard = bootstrap.split('$vcpkgGitDirectory =', 1)[1].split(
@@ -123,7 +135,8 @@ function Invoke-WebRequest {
                     )
                     workspace = directory / workflow.removesuffix('.yml')
                     (workspace / '.tools').mkdir(parents=True)
-                    environment = {**os.environ, 'GITHUB_WORKSPACE': str(workspace)}
+                    environment = {**os.environ, 'GITHUB_WORKSPACE': str(workspace),
+                                   'VCPKG_HISTORICAL_PORT_TREE': historical_tree}
                     # Restore an installed library after the actual workflow clone step,
                     # then run bootstrap's real clone guard without installing any tools.
                     command += """
@@ -138,6 +151,10 @@ if ($LASTEXITCODE -ne 0) { throw 'Cached vcpkg is not a usable checkout.' }
 if ((Get-Content -Raw (Join-Path $installed 'cached.lib')) -ne 'cached dependency') {
     throw 'Restored dependency was lost.'
 }
+# vcpkg resolves version overrides by checking out historical port trees.
+$env:GIT_INDEX_FILE = Join-Path $env:GITHUB_WORKSPACE 'historical-port.index'
+git --git-dir (Join-Path $vcpkgRoot '.git') -c core.autocrlf=false read-tree $env:VCPKG_HISTORICAL_PORT_TREE
+if ($LASTEXITCODE -ne 0) { throw 'Historical vcpkg port is missing from the checkout.' }
 """
                     result = subprocess.run([
                         shell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',

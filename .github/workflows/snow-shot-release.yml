@@ -78,7 +78,8 @@ jobs:
         shell: pwsh
         run: |
           $vcpkgRoot = Join-Path $env:GITHUB_WORKSPACE '.tools/vcpkg'
-          git clone --depth=1 https://github.com/microsoft/vcpkg.git $vcpkgRoot
+          # Version overrides need historical port trees from the full repository.
+          git clone https://github.com/microsoft/vcpkg.git $vcpkgRoot
           if ($LASTEXITCODE -ne 0) { throw 'Could not prepare repository-local vcpkg.' }
 
       - name: Restore static project dependencies
