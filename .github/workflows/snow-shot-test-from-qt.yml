@@ -1,16 +1,21 @@
-name: Build Snow Shot EXE
+# Shares dependency and Qt cache keys with snow-shot-release.yml.
+# Keep the steps from Prepare Qt LTS static kit onward aligned with that workflow.
+name: Test Snow Shot from Qt (x64)
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "v*_snow-shot"
+    inputs:
+      prepare_environment:
+        description: 'Allow dependency setup on a cache miss (slow first run only)'
+        type: boolean
+        required: true
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: snow-shot-release-${{ github.ref_name }}
+  group: snow-shot-qt-recovery-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -26,12 +31,6 @@ jobs:
             rust-target: x86_64-pc-windows-msvc
             qt-kit: msvc2026_64-static-system-codecs
             installed-root: .tools/vcpkg/installed/static
-          - architecture: arm64
-            runner: windows-11-vs2026-arm
-            preset: snow-shot-msvc-arm64-release
-            rust-target: aarch64-pc-windows-msvc
-            qt-kit: msvc2026_arm64-static-system-codecs
-            installed-root: .tools/vcpkg/installed/arm64/static
     runs-on: ${{ matrix.runner }}
     env:
       VCPKG_BINARY_SOURCES: clear
@@ -42,32 +41,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.97.1
-          target: ${{ matrix.rust-target }}
-          components: rustfmt, clippy
-
-      - name: Install Python build helper
-        shell: pwsh
-        run: python -m pip install --disable-pip-version-check virtualenv
-
-      - name: Verify Qt source downloader
-        shell: pwsh
-        run: |
-          python scripts/test-static-qt-download.py
-          if ($LASTEXITCODE -ne 0) { throw "Qt source downloader regression test failed." }
-
-      - name: Provision and validate native ARM64 libclang
-        if: matrix.architecture == 'arm64'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $bin = ./scripts/initialize-snow-shot-arm64-libclang.ps1
-          "LIBCLANG_PATH=$bin" >> $env:GITHUB_ENV
 
       - name: Identify installed build toolchain
         id: toolchain
@@ -86,6 +59,29 @@ jobs:
         with:
           path: ${{ matrix.installed-root }}
           key: snow-static-dependencies-v1-${{ matrix.architecture }}-${{ runner.os }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'scripts/bootstrap.ps1', 'scripts/snow-build-environment.ps1', 'cmake/vcpkg-overlay-triplets/**', 'cmake/vcpkg-overlay-ports/**') }}
+
+      - name: Require saved environment for a quick retry
+        if: steps.dependencies.outputs.cache-hit != 'true' && !inputs.prepare_environment
+        shell: pwsh
+        run: |
+          throw 'No matching static dependency cache exists. Run Build Snow Shot EXE once with the new cache steps, or enable prepare_environment for a one-time setup. This retry will not rebuild dependencies automatically.'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          target: ${{ matrix.rust-target }}
+          components: rustfmt, clippy
+
+      - name: Install Python build helper
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check virtualenv
+
+      - name: Verify Qt source downloader
+        shell: pwsh
+        run: |
+          python scripts/test-static-qt-download.py
+          if ($LASTEXITCODE -ne 0) { throw "Qt source downloader regression test failed." }
 
       - name: Cache Rust build artifacts
         uses: Swatinem/rust-cache@v2
