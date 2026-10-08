@@ -33,7 +33,7 @@ jobs:
             installed-root: .tools/vcpkg/installed/static
     runs-on: ${{ matrix.runner }}
     env:
-      VCPKG_BINARY_SOURCES: clear
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}\.tools\vcpkg-binary-cache,readwrite
       SNOW_ARCHITECTURE: ${{ matrix.architecture }}
       SNOW_PRESET: ${{ matrix.preset }}
     steps:
@@ -55,6 +55,7 @@ jobs:
           . scripts/snow-build-environment.ps1
           $bin = Add-SnowMsvcToolsToPath -Architecture $env:SNOW_ARCHITECTURE
           $compilerHash = (Get-FileHash (Join-Path $bin 'cl.exe') -Algorithm SHA256).Hash
+          [IO.Directory]::CreateDirectory((Join-Path $PWD '.tools/vcpkg-binary-cache')) | Out-Null
           $cmakeCommand = Get-Command cmake -CommandType Application -ErrorAction Stop | Select-Object -First 1
           $cmakeOutput = & $cmakeCommand.Source --version
           if ($LASTEXITCODE -ne 0) { throw 'Could not identify CMake.' }
@@ -91,6 +92,15 @@ jobs:
           python scripts/test-static-qt-download.py
           if ($LASTEXITCODE -ne 0) { throw "Qt source downloader regression test failed." }
 
+      - name: Restore completed vcpkg package archives
+        id: vcpkg-binaries
+        uses: actions/cache/restore@v4
+        with:
+          path: .tools/vcpkg-binary-cache
+          key: snow-vcpkg-binaries-v1-${{ matrix.architecture }}-${{ runner.os }}-${{ steps.toolchain.outputs.fingerprint }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            snow-vcpkg-binaries-v1-${{ matrix.architecture }}-${{ runner.os }}-${{ steps.toolchain.outputs.fingerprint }}-
+
       - name: Cache Rust build artifacts
         uses: Swatinem/rust-cache@v2
         with:
@@ -101,6 +111,7 @@ jobs:
           cache-on-failure: true
 
       - name: Install static project dependencies
+        id: dependency-setup
         shell: pwsh
         run: |
           $dependencyArguments = @{}
@@ -109,6 +120,13 @@ jobs:
           }
           .\scripts\bootstrap.ps1 -Architecture $env:SNOW_ARCHITECTURE -VcpkgVariants Static -SkipQtValidation @dependencyArguments
           if ($LASTEXITCODE -ne 0) { throw 'Static project dependency setup failed.' }
+
+      - name: Preserve completed packages even after dependency setup fails
+        if: always() && steps.vcpkg-binaries.outcome == 'success' && steps.dependencies.outputs.cache-hit != 'true' && steps.dependency-setup.outcome != 'skipped'
+        uses: actions/cache/save@v4
+        with:
+          path: .tools/vcpkg-binary-cache
+          key: ${{ steps.vcpkg-binaries.outputs.cache-primary-key }}
 
       - name: Save static project dependencies immediately
         if: steps.dependencies.outputs.cache-hit != 'true'
