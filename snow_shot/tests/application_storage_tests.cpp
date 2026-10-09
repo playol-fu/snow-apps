@@ -1480,7 +1480,7 @@ void verifyPinToScreenShortcutSettings() {
     const storage::PinToScreenShortcutSettings shortcutSettings;
     const shortcuts::ShortcutBindingMap defaults = shortcutSettings.allShortcuts();
     require(
-        defaults.size() == 28 &&
+        defaults.size() == 29 &&
             portable(defaults.value(QStringLiteral("copy_to_clipboard"))) ==
                 QStringList{QStringLiteral("Ctrl+C")} &&
             portable(defaults.value(QStringLiteral("copy_original_content"))) ==
@@ -1522,7 +1522,7 @@ void verifyPinToScreenShortcutSettings() {
                                            {QStringLiteral("M")}) &&
             shortcutSettings.shortcuts(QStringLiteral("unsupported")).isEmpty() &&
             !shortcutSettings.setShortcuts(QStringLiteral("unsupported"), {QStringLiteral("Q")}),
-        "pinned-window shortcut adapter must expose twenty-eight stable actions and defaults");
+        "pinned-window shortcut adapter must expose twenty-nine stable actions and defaults");
     require(portable(defaults.value(QStringLiteral("increase_opacity"))) ==
                 QStringList{QStringLiteral("]")},
             "increase_opacity must have its default binding");
@@ -2118,7 +2118,7 @@ void settingsAdaptersRoundTripAndRejectInvalidValues() {
 
     const shortcuts::ShortcutBindingMap defaults = drawingShortcuts.allShortcuts();
     require(
-        defaults.size() == 12 && defaults.contains(QStringLiteral("line")) &&
+        defaults.size() == 13 && defaults.contains(QStringLiteral("line")) &&
             defaults.value(QStringLiteral("line")).isEmpty() &&
             defaults.contains(QStringLiteral("spotlight")) &&
             defaults.value(QStringLiteral("spotlight")).isEmpty() &&
@@ -2130,7 +2130,7 @@ void settingsAdaptersRoundTripAndRejectInvalidValues() {
                 QStringList{QStringLiteral("9")} &&
             drawingShortcuts.shortcuts(QStringLiteral("unsupported")).isEmpty() &&
             !drawingShortcuts.setShortcuts(QStringLiteral("unsupported"), {QStringLiteral("Q")}),
-        "drawing shortcut adapter must expose all twelve tools with empty new defaults");
+        "drawing shortcut adapter must expose all thirteen tools with empty new defaults");
 
     require(drawingShortcuts.setSelect({QStringLiteral("Ctrl+Shift+V")}) &&
                 portable(drawingShortcuts.select()) == QStringList{QStringLiteral("Ctrl+Shift+V")},
@@ -2160,7 +2160,7 @@ void settingsAdaptersRoundTripAndRejectInvalidValues() {
     incomplete.remove(QStringLiteral("watermark"));
     require(!drawingShortcuts.setAllShortcutsAtomic(incomplete) &&
                 drawingShortcuts.allShortcuts() == beforeCollision,
-            "atomic drawing shortcut updates must require all twelve tools");
+            "atomic drawing shortcut updates must require all thirteen tools");
 
     shortcuts::ShortcutBindingMap emptyAssignment = beforeCollision;
     emptyAssignment.insert(QStringLiteral("shape"), {});

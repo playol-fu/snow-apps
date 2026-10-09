@@ -1,0 +1,269 @@
+name: Validate capture behavior (x64)
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: Native checks to run
+        type: choice
+        options: [all, settings, catalog, history, recording]
+        default: all
+      translations_only:
+        description: Validate and compile translations without rebuilding native executables
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: snow-shot-capture-behavior-${{ github.ref_name }}-${{ inputs.translations_only }}-${{ inputs.test_scope }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Validate capture settings and behavior
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: x64
+            runner: windows-2025-vs2026
+            preset: snow-shot-msvc-fast
+            rust-target: x86_64-pc-windows-msvc
+            qt-kit: msvc2026_64-static-system-codecs
+            installed-root: .tools/vcpkg/installed/static
+    runs-on: ${{ matrix.runner }}
+    env:
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}\.tools\vcpkg-binary-cache,readwrite
+      SNOW_ARCHITECTURE: ${{ matrix.architecture }}
+      SNOW_PRESET: ${{ matrix.preset }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify workflow toolchain detection
+        shell: pwsh
+        run: |
+          python scripts/test-workflow-toolchain.py
+          if ($LASTEXITCODE -ne 0) { throw 'Workflow toolchain regression test failed.' }
+          python scripts/test-portable-release.py
+          if ($LASTEXITCODE -ne 0) { throw 'Workflow toolchain regression test failed.' }
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          target: ${{ matrix.rust-target }}
+          components: rustfmt, clippy
+
+      - name: Install Python build helper
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check virtualenv
+
+      - name: Verify Qt source downloader
+        shell: pwsh
+        run: |
+          python scripts/test-static-qt-download.py
+          if ($LASTEXITCODE -ne 0) { throw "Qt source downloader regression test failed." }
+
+      - name: Identify installed build toolchain
+        id: toolchain
+        shell: pwsh
+        run: |
+          . scripts/snow-build-environment.ps1
+          $bin = Add-SnowMsvcToolsToPath -Architecture $env:SNOW_ARCHITECTURE
+          $compilerHash = (Get-FileHash (Join-Path $bin 'cl.exe') -Algorithm SHA256).Hash
+          [IO.Directory]::CreateDirectory((Join-Path $PWD '.tools/vcpkg-binary-cache')) | Out-Null
+          $cmakeCommand = Get-Command cmake -CommandType Application -ErrorAction Stop | Select-Object -First 1
+          $cmakeOutput = & $cmakeCommand.Source --version
+          if ($LASTEXITCODE -ne 0) { throw 'Could not identify CMake.' }
+          $cmakeVersion = ($cmakeOutput | Select-Object -First 1) -replace '[^a-zA-Z0-9.-]', '-'
+          "fingerprint=$compilerHash-$env:WindowsSDKVersion-$cmakeVersion".Replace('\', '') >> $env:GITHUB_OUTPUT
+
+      - name: Prepare repository-managed vcpkg checkout
+        shell: pwsh
+        run: |
+          $vcpkgRoot = Join-Path $env:GITHUB_WORKSPACE '.tools/vcpkg'
+          # Version overrides need historical port trees from the full repository.
+          git clone https://github.com/microsoft/vcpkg.git $vcpkgRoot
+          if ($LASTEXITCODE -ne 0) { throw 'Could not prepare repository-local vcpkg.' }
+
+      - name: Restore static project dependencies
+        id: dependencies
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ matrix.installed-root }}
+          key: snow-static-dependencies-v1-${{ matrix.architecture }}-${{ runner.os }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'scripts/bootstrap.ps1', 'scripts/snow-build-environment.ps1', 'cmake/vcpkg-overlay-triplets/**', 'cmake/vcpkg-overlay-ports/**') }}
+
+      - name: Restore completed vcpkg package archives
+        id: vcpkg-binaries
+        uses: actions/cache/restore@v4
+        with:
+          path: .tools/vcpkg-binary-cache
+          key: snow-vcpkg-binaries-v1-${{ matrix.architecture }}-${{ runner.os }}-${{ steps.toolchain.outputs.fingerprint }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            snow-vcpkg-binaries-v1-${{ matrix.architecture }}-${{ runner.os }}-${{ steps.toolchain.outputs.fingerprint }}-
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            snow-crates -> ../build/${{ matrix.preset }}/cargo
+            snow_draw_engine_qt -> ../build/${{ matrix.preset }}/cargo
+            snow_rust_ffi -> ../build/${{ matrix.preset }}/cargo
+          cache-on-failure: true
+
+      - name: Install static project dependencies
+        id: dependency-setup
+        shell: pwsh
+        run: |
+          $dependencyArguments = @{}
+          if ('${{ steps.dependencies.outputs.cache-hit }}' -eq 'true') {
+            $dependencyArguments.SkipDependencyInstall = $true
+          }
+          .\scripts\bootstrap.ps1 -Architecture $env:SNOW_ARCHITECTURE -VcpkgVariants Static -SkipQtValidation @dependencyArguments
+          if ($LASTEXITCODE -ne 0) { throw 'Static project dependency setup failed.' }
+
+      - name: Preserve completed packages even after dependency setup fails
+        if: always() && steps.vcpkg-binaries.outcome == 'success' && steps.dependencies.outputs.cache-hit != 'true' && steps.dependency-setup.outcome != 'skipped'
+        uses: actions/cache/save@v4
+        with:
+          path: .tools/vcpkg-binary-cache
+          key: ${{ steps.vcpkg-binaries.outputs.cache-primary-key }}
+
+      - name: Save static project dependencies immediately
+        if: steps.dependencies.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ matrix.installed-root }}
+          key: ${{ steps.dependencies.outputs.cache-primary-key }}
+
+      - name: Resolve repository Qt toolchain
+        id: qt-toolchain
+        shell: pwsh
+        run: |
+          . scripts/snow-build-environment.ps1
+          "version=$script:SnowQtVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Cache static Qt kit
+        id: qt-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.tool_cache }}\snow-qt\${{ steps.qt-toolchain.outputs.version }}\${{ matrix.qt-kit }}
+          key: snow-qt-static-system-codecs-v6-development-${{ steps.qt-toolchain.outputs.version }}-msvc2026-${{ matrix.architecture }}-${{ runner.os }}-${{ steps.toolchain.outputs.fingerprint }}-${{ hashFiles('scripts/qt-toolchain.json', 'scripts/build-static-qt.ps1', 'scripts/snow-build-environment.ps1', 'scripts/static-qt-features.json', 'scripts/qtbase-timezone-without-cldr.patch', 'scripts/bootstrap.ps1', 'vcpkg.json', 'cmake/vcpkg-overlay-triplets/*-windows-static.cmake', 'cmake/vcpkg-overlay-ports/zlib/**') }}
+
+      - name: Prepare Qt LTS static kit
+        shell: pwsh
+        run: |
+          . scripts/snow-build-environment.ps1
+          $prefix = Join-Path $env:RUNNER_TOOL_CACHE "snow-qt\$script:SnowQtVersion\${{ matrix.qt-kit }}"
+          $dependencies = Join-Path $env:GITHUB_WORKSPACE "${{ matrix.installed-root }}/$env:SNOW_ARCHITECTURE-windows-static"
+          & "$env:GITHUB_WORKSPACE\scripts\build-static-qt.ps1" -Architecture $env:SNOW_ARCHITECTURE -InstallPrefix $prefix -DependencyPrefix $dependencies -DevelopmentModules
+          if ($LASTEXITCODE -ne 0) { throw "Static Qt bootstrap failed." }
+          $qtDir = Join-Path $prefix "lib\cmake\Qt6"
+          if (-not (Test-Path -LiteralPath (Join-Path $qtDir "Qt6Config.cmake") -PathType Leaf)) {
+            throw "Qt $script:SnowQtVersion static CMake package was not found at $qtDir"
+          }
+          "SNOW_QT_STATIC_DIR=$qtDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "Qt6_DIR=$qtDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Save static Qt kit immediately
+        if: steps.qt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.tool_cache }}\snow-qt\${{ steps.qt-toolchain.outputs.version }}\${{ matrix.qt-kit }}
+          key: ${{ steps.qt-cache.outputs.cache-primary-key }}
+
+      - name: Configure focused behavior tests
+        shell: pwsh
+        run: |
+          . scripts/snow-build-environment.ps1
+          $null = Set-SnowBuildEnvironment -Preset $env:SNOW_PRESET
+          cmake --preset $env:SNOW_PRESET -DSNOW_APPS_BUILD_TESTS=ON -DSNOW_APPS_BUILD_SNOW_SHOT_MINI=OFF
+          if ($LASTEXITCODE -ne 0) { throw 'Behavior test configuration failed.' }
+
+      - name: Extract application translations
+        shell: pwsh
+        run: |
+          . scripts/snow-build-environment.ps1
+          $null = Set-SnowBuildEnvironment -Preset $env:SNOW_PRESET
+          cmake --build --preset "build-$env:SNOW_PRESET" --target snow_shot_update_translations
+          if ($LASTEXITCODE -ne 0) { throw 'Translation extraction failed.' }
+          python snow_shot/scripts/translation_catalogs.py check
+          if ($LASTEXITCODE -ne 0) { throw 'Translation catalogs are incomplete.' }
+          git diff --exit-code -- snow_shot/i18n
+          if ($LASTEXITCODE -ne 0) { throw 'Committed catalogs do not match application extraction.' }
+
+      - name: Compile and test translation catalogs
+        shell: pwsh
+        run: |
+          . scripts/snow-build-environment.ps1
+          $null = Set-SnowBuildEnvironment -Preset $env:SNOW_PRESET
+          cmake --build --preset "build-$env:SNOW_PRESET" --target snow_shot_release_translations
+          if ($LASTEXITCODE -ne 0) { throw 'Translation compilation failed.' }
+          python snow_shot/tests/translation_catalog_tests.py
+          if ($LASTEXITCODE -ne 0) { throw 'Translation regression tests failed.' }
+
+      - name: Preserve extracted translation catalogs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capture-behavior-translations
+          path: snow_shot/i18n/**/*.ts
+
+      - name: Build only affected test targets
+        if: ${{ !inputs.translations_only }}
+        shell: pwsh
+        run: |
+          . scripts/snow-build-environment.ps1
+          $null = Set-SnowBuildEnvironment -Preset $env:SNOW_PRESET
+          $groups = @{
+            all = @('snow-shot-application-storage-tests', 'snow-shot-settings-catalog-tests', 'snow-shot-screenshot-history-tests', 'snow-shot-screen-recording-controller-tests', 'snow_shot')
+            settings = @('snow-shot-application-storage-tests', 'snow-shot-settings-catalog-tests')
+            catalog = @('snow-shot-settings-catalog-tests')
+            history = @('snow-shot-screenshot-history-tests')
+            recording = @('snow-shot-screen-recording-controller-tests')
+          }
+          [string[]]$targets = $groups['${{ inputs.test_scope }}']
+          cmake --build --preset "build-$env:SNOW_PRESET" --parallel 4 --target @targets
+          if ($LASTEXITCODE -ne 0) { throw 'Behavior test build failed.' }
+
+      - name: Test changed behavior offscreen
+        timeout-minutes: 5
+        if: ${{ !inputs.translations_only }}
+        shell: pwsh
+        run: |
+          $testDir = "build/$env:SNOW_PRESET/snow_shot/test-bin/Release"
+          if ('${{ inputs.test_scope }}' -in @('all', 'settings')) {
+            & "$testDir/snow-shot-application-storage-tests.exe" --shortcut-settings-only
+            if ($LASTEXITCODE -ne 0) { throw 'Shortcut and settings tests failed.' }
+          }
+          if ('${{ inputs.test_scope }}' -in @('all', 'settings', 'catalog')) {
+            & "$testDir/snow-shot-settings-catalog-tests.exe" -platform offscreen
+            if ($LASTEXITCODE -ne 0) { throw 'Settings catalog tests failed.' }
+          }
+          if ('${{ inputs.test_scope }}' -in @('all', 'history')) {
+            & "$testDir/snow-shot-screenshot-history-tests.exe" --completion-gestures-only -platform offscreen
+            if ($LASTEXITCODE -ne 0) { throw 'Middle-click gesture tests failed.' }
+            & "$testDir/snow-shot-screenshot-history-tests.exe" --recognition-history-only -platform offscreen
+            if ($LASTEXITCODE -ne 0) { throw 'Recognition history tests failed.' }
+          }
+          if ('${{ inputs.test_scope }}' -in @('all', 'recording')) {
+            & "$testDir/snow-shot-screen-recording-controller-tests.exe" --auto-start-only -platform offscreen
+            if ($LASTEXITCODE -ne 0) { throw 'Automatic recording startup tests failed.' }
+            & "$testDir/snow-shot-screen-recording-controller-tests.exe" --auto-copy-only -platform offscreen
+            if ($LASTEXITCODE -ne 0) { throw 'Automatic recording clipboard tests failed.' }
+            & "$testDir/snow-shot-screen-recording-controller-tests.exe" --auto-exit-only -platform offscreen
+            if ($LASTEXITCODE -ne 0) { throw 'Recording finalization regression tests failed.' }
+          }
+
+      - name: Preserve compiled behavior tests
+        if: always() && !inputs.translations_only
+        uses: actions/upload-artifact@v4
+        with:
+          name: capture-behavior-tests-${{ inputs.test_scope }}
+          path: build/${{ matrix.preset }}/snow_shot/test-bin/Release/*.exe
+          if-no-files-found: ignore

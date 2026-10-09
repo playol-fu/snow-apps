@@ -349,8 +349,41 @@ void builtInCatalogIsCompleteAndValid() {
                 quickModificationSection->title.translated() == QStringLiteral("Interaction") &&
                 quickModificationSection->items.at(4).id ==
                     QStringLiteral("screenshot.middle-mouse-button-action") &&
-                quickModificationSection->items.at(5).id == quickModification->id,
-            "quick selection modification must immediately follow middle mouse button action");
+                quickModificationSection->items.at(5).id ==
+                    QStringLiteral("screenshot.save-history-on-recognition") &&
+                quickModificationSection->items.at(6).id ==
+                    QStringLiteral("screenshot.middle-click-confirms-selection") &&
+                quickModificationSection->items.at(7).id == quickModification->id,
+            "capture behavior switches must follow the middle mouse button action");
+    const auto verifyCaptureBehaviorSwitch = [&catalog](const QString& page, const QString& section,
+                                                        const QString& id, const QString& key,
+                                                        settings::SettingsSwitchBinding binding) {
+        const auto* item = catalog.item({page, section, id});
+        require(item && item->configurationKey == key &&
+                    storage::ConfigurationSchema::defaultValue(key).toBool() &&
+                    std::get<settings::SettingsSwitchDefinition>(item->payload).binding == binding,
+                "capture behavior toggles must be available with enabled defaults");
+    };
+    verifyCaptureBehaviorSwitch(
+        QStringLiteral("screenshots"), QStringLiteral("screenshot-settings"),
+        QStringLiteral("screenshot.middle-click-confirms-selection"),
+        QStringLiteral("screenshot/middle_click_confirms_selection"),
+        settings::SettingsSwitchBinding::ScreenshotMiddleClickConfirmsSelection);
+    verifyCaptureBehaviorSwitch(
+        QStringLiteral("screenshots"), QStringLiteral("screenshot-settings"),
+        QStringLiteral("screenshot.save-history-on-recognition"),
+        QStringLiteral("screenshot/save_history_on_recognition"),
+        settings::SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition);
+    verifyCaptureBehaviorSwitch(QStringLiteral("screen-recording"),
+                                QStringLiteral("screen-recording-interaction"),
+                                QStringLiteral("screen_recording.auto-start-on-open"),
+                                QStringLiteral("screen_recording/auto_start_on_open"),
+                                settings::SettingsSwitchBinding::ScreenRecordingAutoStartOnOpen);
+    verifyCaptureBehaviorSwitch(QStringLiteral("screen-recording"),
+                                QStringLiteral("screen-recording-interaction"),
+                                QStringLiteral("screen_recording.auto-copy-after-stop"),
+                                QStringLiteral("screen_recording/auto_copy_after_stop"),
+                                settings::SettingsSwitchBinding::ScreenRecordingAutoCopyAfterStop);
     const auto* selectionResizeMode =
         catalog.item({QStringLiteral("screenshots"), QStringLiteral("screenshot-settings"),
                       QStringLiteral("screenshot.selection-resize-mode")});
@@ -474,9 +507,9 @@ void builtInCatalogIsCompleteAndValid() {
                 itemIds.contains(QStringLiteral("screenshot-shortcut.upload_to_cloud")) &&
                 itemIds.contains(QStringLiteral("pin-to-screen-shortcut.upload_to_cloud")),
             "cloud upload must expose its configuration and shortcuts in both local scopes");
-    require(itemIds.size() == 249,
+    require(itemIds.size() == 253,
             qPrintable(QStringLiteral(
-                           "catalog must contain 249 shared settings on every platform; found %1")
+                           "catalog must contain 253 shared settings on every platform; found %1")
                            .arg(itemIds.size())));
     require(itemIds.contains(QStringLiteral("pin-to-screen.confirm-before-closing-window")) &&
                 itemIds.contains(QStringLiteral("pin-to-screen.confirm-before-destroying-window")),
@@ -1653,7 +1686,7 @@ void builtInCatalogIsCompleteAndValid() {
     require(recordingInteraction != nullptr && recordingAutoExit != nullptr &&
                 recordingPage->sections.constLast().id == recordingInteraction->id &&
                 recordingInteraction->title.translated() == QStringLiteral("Interaction") &&
-                recordingInteraction->items.size() == 2 &&
+                recordingInteraction->items.size() == 4 &&
                 recordingInteraction->reset ==
                     settings::SettingsSectionReset::ScreenRecordingInteraction &&
                 recordingAutoExit->title.translated() ==
@@ -1664,7 +1697,7 @@ void builtInCatalogIsCompleteAndValid() {
                     settings::SettingsSwitchBinding::ScreenRecordingAutoExitAfterRecordingEnds &&
                 settings::builtInSettingsRegistry()
                         .fieldsForReset(settings::SettingsSectionReset::ScreenRecordingInteraction)
-                        .size() == 2,
+                        .size() == 4,
             "recording Interaction must follow Action Toolbar with its own auto-exit reset scope");
     require(recordingNotify != nullptr &&
                 recordingNotify->title.translated() ==
