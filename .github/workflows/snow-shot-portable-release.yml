@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*_snow-shot"
+      - "v*-windows-x64-portable"
 
 permissions:
   contents: write
@@ -186,7 +186,7 @@ jobs:
         run: |
           $version = [regex]::Match((Get-Content -Raw CMakeLists.txt), 'set\(SNOW_SHOT_VERSION "([^"]+)"\)').Groups[1].Value
           if (-not $version) { throw 'Missing Snow Shot version.' }
-          $tag = "v${version}_snow-shot"
+          $tag = "v${version}-windows-x64-portable"
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -cne $tag) { throw 'Release tag does not match the application version.' }
           $asset = "snow-shot-$version-windows-x64-portable.zip"
           $path = Join-Path $env:GITHUB_WORKSPACE "build/snow-shot-msvc-release/$asset"

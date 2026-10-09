@@ -18,6 +18,8 @@ class PortableRelease(unittest.TestCase):
     def test_workflow_only_builds_and_publishes_portable(self):
         source = WORKFLOW.read_text(encoding='utf-8')
         self.assertIn('contents: write', source)
+        self.assertIn('$tag = "v${version}-windows-x64-portable"', source)
+        self.assertNotIn('v*_snow-shot', source)
         self.assertIn('package-snow-shot.ps1 -Architecture x64 -PortableOnly', source)
         self.assertIn('test-snow-shot-native-package.ps1 -Architecture x64 -PortableOnly', source)
         self.assertIn('snow-shot-$version-windows-x64-portable.zip', source)
@@ -99,7 +101,7 @@ execute(fakeRequire, github, context, core).then(() => {
 });
 """.replace('SCRIPT', json.dumps(script))
             path.write_text(harness, encoding='utf-8')
-            environment = {**os.environ, 'RELEASE_TAG': 'v1.2.4_snow-shot',
+            environment = {**os.environ, 'RELEASE_TAG': 'v1.2.4-windows-x64-portable',
                            'RELEASE_VERSION': '1.2.4', 'PORTABLE_SHA256': 'fixture-sha256',
                            'PORTABLE_ASSET': 'snow-shot-1.2.4-windows-x64-portable.zip',
                            'PORTABLE_PATH': 'fixture.zip'}
