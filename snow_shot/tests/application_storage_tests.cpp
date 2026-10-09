@@ -385,9 +385,10 @@ void settingsSchemaDefaultsAndValidationAreComplete() {
             defaultValue("global_shortcuts/screenshot").toArray() ==
                 structuredShortcuts(QJsonArray{QStringLiteral("Print")}) &&
             defaultValue("global_shortcuts/screenshot_copy").toArray() ==
-                structuredShortcuts(QJsonArray{QStringLiteral("Ctrl+F1")}) &&
+                QJsonArray() &&
             defaultValue("global_shortcuts/pin_clipboard_content").toArray() ==
-                structuredShortcuts(QJsonArray{QStringLiteral("F3")}) &&
+                QJsonArray() &&
+            defaultValue("global_shortcuts/restore_last_closed_windows").toArray().isEmpty() &&
 #endif
             defaultValue("global_shortcuts/pin_selected_files").toArray().isEmpty() &&
             defaultValue("global_shortcuts/open_screen_recording_folder").toArray().isEmpty() &&
@@ -2899,8 +2900,7 @@ void pinnedManagementConfigurationAndTrayMigration() {
     require(shortcut == QJsonArray{shortcutObject(QStringLiteral("Meta+Shift+3"), 20)},
             "macOS restores with physical Control Shift 3");
 #else
-    require(shortcut == QJsonArray{shortcutObject(QStringLiteral("Ctrl+F3"))},
-            "Windows restore defaults to Ctrl F3");
+    require(shortcut.isEmpty(), "Windows restore shortcut defaults to unassigned");
 #endif
 }
 
@@ -2991,6 +2991,7 @@ int main(int argc, char** argv) {
     QCoreApplication::setOrganizationName(QStringLiteral("SnowShotTests"));
     QCoreApplication::setApplicationName(QStringLiteral("storage-tests"));
     if (application.arguments().contains(QStringLiteral("--shortcut-settings-only"))) {
+        pinnedManagementConfigurationAndTrayMigration();
         settingsSchemaDefaultsAndValidationAreComplete();
         settingsAdaptersRoundTripAndRejectInvalidValues();
         storage::ApplicationStorage::instance().shutdown();

@@ -433,7 +433,7 @@ const QVector<ConfigurationSchemaEntry> kRawEntries = {
      2},
 #endif
     {QStringLiteral("global_shortcuts/screenshot_copy"),
-     QJsonArray{QStringLiteral("Ctrl+F1")},
+     QJsonArray(),
      ConfigurationValueKind::StringList,
      std::nullopt,
      {},
@@ -519,7 +519,7 @@ const QVector<ConfigurationSchemaEntry> kRawEntries = {
      2},
 #endif
     {QStringLiteral("global_shortcuts/pin_clipboard_content"),
-     QJsonArray{QStringLiteral("F3")},
+     QJsonArray(),
      ConfigurationValueKind::StringList,
      std::nullopt,
      {},
@@ -531,7 +531,7 @@ const QVector<ConfigurationSchemaEntry> kRawEntries = {
      {},
      2},
     {QStringLiteral("global_shortcuts/restore_last_closed_windows"),
-     QJsonArray{QStringLiteral("Ctrl+F3")},
+     QJsonArray(),
      ConfigurationValueKind::StringList,
      std::nullopt,
      {},
