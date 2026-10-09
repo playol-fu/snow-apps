@@ -260,5 +260,40 @@ class TranslationCatalogTests(unittest.TestCase):
             catalogs.check(self.directory)
 
 
+class CaptureBehaviorTranslationTests(unittest.TestCase):
+    def test_new_capture_options_have_chinese_translations(self):
+        required = {
+            "Middle click confirms selection",
+            "Confirm the highlighted region before running the middle mouse button action.",
+            "Start recording immediately",
+            "Start recording when entering recording mode, using the configured start delay.",
+            "Save recognition screenshots to history",
+            "Save the selected screenshot when opening text recognition, table recognition, or translation.",
+            "Copy recording after stopping",
+            "Copy the recorded file to the clipboard after it is successfully saved.",
+        }
+        for locale in ("zh_CN", "zh_TW"):
+            found = set()
+            history_contexts = set()
+            for path in (PROJECT / "i18n").rglob(f"*_{locale}.ts"):
+                for context in ET.parse(path).getroot().findall("context"):
+                    name = context.findtext("name")
+                    for message in context.findall("message"):
+                        source = message.findtext("source")
+                        relevant = name == "SettingsCatalog" and source in required
+                        history = name in ("HistoryEntryWidget", "ScreenshotHistoryPageWidget") and source == "Text recognition"
+                        if not (relevant or history):
+                            continue
+                        with self.subTest(locale=locale, context=name, source=source):
+                            self.assertRegex(message.findtext("translation", ""), r"[\u4e00-\u9fff]")
+                            self.assertNotIn("?", message.findtext("translation", ""))
+                        if relevant:
+                            found.add(source)
+                        if history:
+                            history_contexts.add(name)
+            self.assertEqual(found, required)
+            self.assertEqual(history_contexts, {"HistoryEntryWidget", "ScreenshotHistoryPageWidget"})
+
+
 if __name__ == "__main__":
     unittest.main()

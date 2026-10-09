@@ -495,6 +495,8 @@ class RecordingSettings final {
     bool setCaptureToolbarInRecording(bool capture) const;
     [[nodiscard]] bool autoStartOnOpen() const;
     bool setAutoStartOnOpen(bool enabled) const;
+    [[nodiscard]] bool autoCopyAfterStop() const;
+    bool setAutoCopyAfterStop(bool enabled) const;
     [[nodiscard]] bool autoExitAfterRecordingEnds() const;
     bool setAutoExitAfterRecordingEnds(bool enabled) const;
     [[nodiscard]] bool notifyAfterExportCompletes() const;

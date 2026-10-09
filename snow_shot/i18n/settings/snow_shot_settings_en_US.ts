@@ -1849,6 +1849,10 @@
             <translation>Copy recording</translation>
         </message>
         <message>
+            <source>Copy recording after stopping</source>
+            <translation>Copy recording after stopping</translation>
+        </message>
+        <message>
             <source>Copy screenshot</source>
             <translation>Copy screenshot</translation>
         </message>
@@ -1871,6 +1875,10 @@
         <message>
             <source>Copy the confirmed screenshot selection to the clipboard</source>
             <translation>Copy the confirmed screenshot selection to the clipboard</translation>
+        </message>
+        <message>
+            <source>Copy the recorded file to the clipboard after it is successfully saved.</source>
+            <translation>Copy the recorded file to the clipboard after it is successfully saved.</translation>
         </message>
         <message>
             <source>Copy to Clipboard</source>

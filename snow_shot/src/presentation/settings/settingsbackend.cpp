@@ -816,6 +816,8 @@ bool BuiltInSettingsBackend::switchValue(SettingsSwitchBinding binding) const {
         return storage::RecordingSettings().autoStartOnOpen();
     case SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition:
         return storage::ScreenshotSettings().saveHistoryOnRecognition();
+    case SettingsSwitchBinding::ScreenRecordingAutoCopyAfterStop:
+        return storage::RecordingSettings().autoCopyAfterStop();
     case SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy:
         return storage::ScreenshotSettings().autoSaveAfterCopy();
     case SettingsSwitchBinding::ScreenshotQuickSelectionModification:
@@ -1058,6 +1060,9 @@ bool BuiltInSettingsBackend::applySwitchValue(SettingsSwitchBinding binding, boo
     if (binding == SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition) {
         return storage::ScreenshotSettings().setSaveHistoryOnRecognition(value);
     }
+    if (binding == SettingsSwitchBinding::ScreenRecordingAutoCopyAfterStop) {
+        return storage::RecordingSettings().setAutoCopyAfterStop(value);
+    }
     if (binding == SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy) {
         return storage::ScreenshotSettings().setAutoSaveAfterCopy(value);
     }
@@ -1198,6 +1203,7 @@ bool BuiltInSettingsBackend::applySwitchValue(SettingsSwitchBinding binding, boo
     case SettingsSwitchBinding::ScreenshotMiddleClickConfirmsSelection:
     case SettingsSwitchBinding::ScreenRecordingAutoStartOnOpen:
     case SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition:
+    case SettingsSwitchBinding::ScreenRecordingAutoCopyAfterStop:
     case SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy:
     case SettingsSwitchBinding::ScreenshotQuickSelectionModification:
     case SettingsSwitchBinding::ScreenshotShowCursor:
@@ -2614,6 +2620,9 @@ bool BuiltInSettingsBackend::resetSection(SettingsSectionReset reset) {
             {QStringLiteral("screen_recording/auto_start_on_open"),
              storage::ConfigurationSchema::defaultValue(
                  QStringLiteral("screen_recording/auto_start_on_open"))},
+            {QStringLiteral("screen_recording/auto_copy_after_stop"),
+             storage::ConfigurationSchema::defaultValue(
+                 QStringLiteral("screen_recording/auto_copy_after_stop"))},
             {QStringLiteral("screen_recording/auto_exit_after_recording_ends"),
              storage::ConfigurationSchema::defaultValue(
                  QStringLiteral("screen_recording/auto_exit_after_recording_ends"))},

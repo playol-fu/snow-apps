@@ -140,6 +140,7 @@ enum class SettingsSwitchBinding {
     ScreenshotMiddleClickConfirmsSelection,
     ScreenRecordingAutoStartOnOpen,
     ScreenshotSaveHistoryOnRecognition,
+    ScreenRecordingAutoCopyAfterStop,
     ScreenshotAutoSaveAfterCopy,
     ScreenshotQuickSelectionModification,
     ScreenshotShowCursor,

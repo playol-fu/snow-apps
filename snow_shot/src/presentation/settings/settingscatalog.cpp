@@ -3135,6 +3135,13 @@ QVector<SettingsPageDefinition> builtInPages() {
                  settingsText(QT_TRANSLATE_NOOP("SettingsCatalog", "Screen recording behavior")),
                  SettingsSectionReset::ScreenRecordingInteraction,
                  {screenRecordingAutoExitAfterRecordingEndsItem(),
+                  switchItem(QStringLiteral("screen_recording.auto-copy-after-stop"),
+                             QT_TRANSLATE_NOOP("SettingsCatalog", "Copy recording after stopping"),
+                             QT_TRANSLATE_NOOP("SettingsCatalog",
+                                               "Copy the recorded file to the clipboard after it "
+                                               "is successfully saved."),
+                             QStringLiteral("screen_recording/auto_copy_after_stop"),
+                             SettingsSwitchBinding::ScreenRecordingAutoCopyAfterStop),
                   switchItem(QStringLiteral("screen_recording.auto-start-on-open"),
                              QT_TRANSLATE_NOOP("SettingsCatalog", "Start recording immediately"),
                              QT_TRANSLATE_NOOP("SettingsCatalog",
@@ -4612,6 +4619,9 @@ QStringList SettingsCatalog::validationErrors() const {
                         break;
                     case SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition:
                         expectedKey = QStringLiteral("screenshot/save_history_on_recognition");
+                        break;
+                    case SettingsSwitchBinding::ScreenRecordingAutoCopyAfterStop:
+                        expectedKey = QStringLiteral("screen_recording/auto_copy_after_stop");
                         break;
                     case SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy:
                         expectedKey = QStringLiteral("screenshot/auto_save_after_copy");

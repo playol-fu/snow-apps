@@ -1839,6 +1839,14 @@ bool RecordingSettings::setAutoStartOnOpen(bool enabled) const {
     return cache().setValue(QStringLiteral("screen_recording/auto_start_on_open"), enabled);
 }
 
+bool RecordingSettings::autoCopyAfterStop() const {
+    return cache().value(QStringLiteral("screen_recording/auto_copy_after_stop")).toBool();
+}
+
+bool RecordingSettings::setAutoCopyAfterStop(bool enabled) const {
+    return cache().setValue(QStringLiteral("screen_recording/auto_copy_after_stop"), enabled);
+}
+
 bool RecordingSettings::autoExitAfterRecordingEnds() const {
     return cache()
         .value(QStringLiteral("screen_recording/auto_exit_after_recording_ends"))

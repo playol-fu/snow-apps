@@ -4302,6 +4302,10 @@ int main(int argc, char** argv) {
             "existing recording fixtures explicitly exercise manual startup");
     require(RecordingSettings().setVideoSaveDirectory(temporary.path()),
             "test output directory must be set");
+    require(RecordingSettings().autoCopyAfterStop(),
+            "automatic recording copy defaults to enabled");
+    require(RecordingSettings().setAutoCopyAfterStop(false),
+            "existing recording fixtures explicitly exercise manual copy");
     require(RecordingSettings().setCaptureToolbarInRecording(true),
             "capture exclusion must be disabled for fake backend");
 #ifdef Q_OS_WIN
@@ -4379,6 +4383,61 @@ int main(int argc, char** argv) {
             require(!controller.isRecording() && starts == originalStarts + 1,
                     "disabled auto-start preserves the idle recording controls");
         }
+        ApplicationStorage::instance().shutdown();
+        return 0;
+    }
+    if (app.arguments().contains(QStringLiteral("--auto-copy-only"))) {
+        ErrorObserver errors;
+        app.installEventFilter(&errors);
+        for (const bool enabled : {false, true}) {
+            for (const bool deferred : {false, true}) {
+                for (const bool succeeds : {false, true}) {
+                    require(RecordingSettings().setAutoCopyAfterStop(enabled) &&
+                                RecordingSettings().setPostProcessingEnabled(deferred) &&
+                                RecordingSettings().setCaptureToolbarInRecording(true),
+                            "configure automatic recording copy fixture");
+                    ScreenRecordingController controller(testEffectsSource);
+                    controller.open(QRect(40, 40, 320, 240));
+                    controller.startRecording();
+                    waitForRecording(controller);
+                    QApplication::clipboard()->setText(QStringLiteral("original clipboard"));
+                    failExport = !succeeds;
+                    const int beforeRenderPolls = renderPolls;
+                    palette()->recordingStopRequested();
+                    if (deferred && succeeds) {
+                        QElapsedTimer deadline;
+                        deadline.start();
+                        while (renderPolls == beforeRenderPolls && deadline.elapsed() < 3000) {
+                            QCoreApplication::processEvents(
+                                QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents, 100);
+                        }
+                        require(renderPolls > beforeRenderPolls,
+                                "automatic copy must wait for deferred rendering");
+                        require(QApplication::clipboard()->text() ==
+                                    QStringLiteral("original clipboard"),
+                                "pending deferred rendering must preserve clipboard contents");
+                        renderState = SNOW_RECORDING_RENDER_STATE_SUCCEEDED;
+                    }
+                    waitForIdle(controller);
+                    failExport = false;
+                    const auto* mime = QApplication::clipboard()->mimeData();
+                    if (enabled && succeeds) {
+                        require(
+                            mime && mime->urls() == QList<QUrl>{QUrl::fromLocalFile(
+                                                        controller.automationState()
+                                                            .value(QStringLiteral("path"))
+                                                            .toString())},
+                            "successful Stop must copy the same recorded file as Copy recording");
+                    } else {
+                        require(QApplication::clipboard()->text() ==
+                                    QStringLiteral("original clipboard"),
+                                "disabled automatic copy or failed export must preserve clipboard "
+                                "contents");
+                    }
+                }
+            }
+        }
+        app.removeEventFilter(&errors);
         ApplicationStorage::instance().shutdown();
         return 0;
     }

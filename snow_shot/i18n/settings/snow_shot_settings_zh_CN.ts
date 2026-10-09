@@ -1849,6 +1849,10 @@
             <translation>复制录制内容</translation>
         </message>
         <message>
+            <source>Copy recording after stopping</source>
+            <translation>停止后复制录屏</translation>
+        </message>
+        <message>
             <source>Copy screenshot</source>
             <translation>复制截图</translation>
         </message>
@@ -1871,6 +1875,10 @@
         <message>
             <source>Copy the confirmed screenshot selection to the clipboard</source>
             <translation>将确认的截图选区复制到剪贴板</translation>
+        </message>
+        <message>
+            <source>Copy the recorded file to the clipboard after it is successfully saved.</source>
+            <translation>录制文件成功保存后将其复制到剪贴板。</translation>
         </message>
         <message>
             <source>Copy to Clipboard</source>

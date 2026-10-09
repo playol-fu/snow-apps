@@ -1322,6 +1322,9 @@ struct ScreenRecordingController::Impl {
         durationTimer.stop();
         // Keep the final duration on screen while the file is finalized;
         // pollFinalization resets it once the operation completes.
+        copyAfterFinalization =
+            copyToClipboard || (!trimRequested && !automationOwned &&
+                                snow_shot::storage::RecordingSettings().autoCopyAfterStop());
         sessionStatus = sessionStatus.finishing(copyToClipboard);
         automationRevision = snow_shot::presentation::nextAutomationRevision();
         syncUi();
@@ -1435,8 +1438,8 @@ struct ScreenRecordingController::Impl {
 
     void finishExport(bool ok, const QString& error, qint64 renderedDuration, bool notifyError) {
         const QString completedPath = pendingOutputPath;
-        const bool shouldCopy =
-            sessionStatus.busyOperation() == ScreenshotToolPalette::RecordingBusyOperation::Copying;
+        const bool shouldCopy = copyAfterFinalization;
+        copyAfterFinalization = false;
         sessionStatus = ScreenshotToolPalette::RecordingSessionStatus::idle();
         automationError = error;
         automationRevision = snow_shot::presentation::nextAutomationRevision();
@@ -2006,6 +2009,7 @@ struct ScreenRecordingController::Impl {
     std::future<FinalizationResult> finalizationFuture;
     RecordingRenderJob* renderJob = nullptr;
     QPointer<RecordingTrimSession> trimSession;
+    bool copyAfterFinalization = false;
     bool trimRequested = false;
     bool trimSaveWhenReady = false;
     bool sessionLoopAnimatedImages = false;
