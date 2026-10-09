@@ -4297,6 +4297,9 @@ int main(int argc, char** argv) {
                 .initialize({temporary.filePath("bin"), temporary.filePath("settings"), 0})
                 .success,
             "isolated storage must initialize");
+    require(RecordingSettings().autoStartOnOpen(), "recording auto-start defaults to enabled");
+    require(RecordingSettings().setAutoStartOnOpen(false),
+            "existing recording fixtures explicitly exercise manual startup");
     require(RecordingSettings().setVideoSaveDirectory(temporary.path()),
             "test output directory must be set");
     require(RecordingSettings().setCaptureToolbarInRecording(true),
@@ -4352,6 +4355,33 @@ int main(int argc, char** argv) {
     QApplication::setFont(testFont);
     QFontDatabase::setApplicationFallbackFontFamilies(QChar::Script_Han,
                                                       {QStringLiteral("Snow Recording Test Han")});
+    if (app.arguments().contains(QStringLiteral("--auto-start-only"))) {
+        require(RecordingSettings().setAutoStartOnOpen(true), "enable automatic startup fixture");
+        require(RecordingSettings().setVideoSaveDirectory(temporary.path()),
+                "use an isolated recording output directory");
+        require(RecordingSettings().setCaptureToolbarInRecording(true),
+                "disable capture exclusion for fake recording backend");
+        const int originalStarts = starts;
+        {
+            ScreenRecordingController controller(testEffectsSource);
+            controller.open(QRect(40, 40, 320, 240));
+            waitForRecording(controller);
+            require(starts == originalStarts + 1,
+                    "opening recording mode starts exactly once without pressing Start");
+            controller.startRecording();
+            require(starts == originalStarts + 1, "Start must not duplicate automatic startup");
+        }
+        require(RecordingSettings().setAutoStartOnOpen(false), "disable automatic startup");
+        {
+            ScreenRecordingController controller(testEffectsSource);
+            controller.open(QRect(40, 40, 320, 240));
+            QCoreApplication::processEvents();
+            require(!controller.isRecording() && starts == originalStarts + 1,
+                    "disabled auto-start preserves the idle recording controls");
+        }
+        ApplicationStorage::instance().shutdown();
+        return 0;
+    }
     if (app.arguments().contains(QStringLiteral("--trim-only"))) {
         QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
         recordingTrimmingTests(temporary.path());

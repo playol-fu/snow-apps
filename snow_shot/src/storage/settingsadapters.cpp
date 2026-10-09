@@ -1823,6 +1823,14 @@ bool RecordingSettings::setCaptureToolbarInRecording(bool capture) const {
                             capture);
 }
 
+bool RecordingSettings::autoStartOnOpen() const {
+    return cache().value(QStringLiteral("screen_recording/auto_start_on_open")).toBool();
+}
+
+bool RecordingSettings::setAutoStartOnOpen(bool enabled) const {
+    return cache().setValue(QStringLiteral("screen_recording/auto_start_on_open"), enabled);
+}
+
 bool RecordingSettings::autoExitAfterRecordingEnds() const {
     return cache()
         .value(QStringLiteral("screen_recording/auto_exit_after_recording_ends"))

@@ -3126,6 +3126,13 @@ QVector<SettingsPageDefinition> builtInPages() {
                  settingsText(QT_TRANSLATE_NOOP("SettingsCatalog", "Screen recording behavior")),
                  SettingsSectionReset::ScreenRecordingInteraction,
                  {screenRecordingAutoExitAfterRecordingEndsItem(),
+                  switchItem(QStringLiteral("screen_recording.auto-start-on-open"),
+                             QT_TRANSLATE_NOOP("SettingsCatalog", "Start recording immediately"),
+                             QT_TRANSLATE_NOOP("SettingsCatalog",
+                                               "Start recording when entering recording mode, "
+                                               "using the configured start delay."),
+                             QStringLiteral("screen_recording/auto_start_on_open"),
+                             SettingsSwitchBinding::ScreenRecordingAutoStartOnOpen),
                   screenRecordingNotifyAfterExportCompletesItem()},
              },
          },
@@ -4590,6 +4597,9 @@ QStringList SettingsCatalog::validationErrors() const {
                         break;
                     case SettingsSwitchBinding::ScreenshotMiddleClickConfirmsSelection:
                         expectedKey = QStringLiteral("screenshot/middle_click_confirms_selection");
+                        break;
+                    case SettingsSwitchBinding::ScreenRecordingAutoStartOnOpen:
+                        expectedKey = QStringLiteral("screen_recording/auto_start_on_open");
                         break;
                     case SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy:
                         expectedKey = QStringLiteral("screenshot/auto_save_after_copy");

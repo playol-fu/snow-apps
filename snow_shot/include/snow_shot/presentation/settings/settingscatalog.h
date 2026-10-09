@@ -138,6 +138,7 @@ enum class SettingsSwitchBinding {
     TrayEnabled,
     FloatingToolbarEnabled,
     ScreenshotMiddleClickConfirmsSelection,
+    ScreenRecordingAutoStartOnOpen,
     ScreenshotAutoSaveAfterCopy,
     ScreenshotQuickSelectionModification,
     ScreenshotShowCursor,

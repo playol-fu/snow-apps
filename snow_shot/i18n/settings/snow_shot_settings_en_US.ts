@@ -3853,6 +3853,14 @@
             <translation>Start new screenshot sessions and pin-to-screen annotation mode with the last used annotation tool instead of the move tool</translation>
         </message>
         <message>
+            <source>Start recording immediately</source>
+            <translation>Start recording immediately</translation>
+        </message>
+        <message>
+            <source>Start recording when entering recording mode, using the configured start delay.</source>
+            <translation>Start recording when entering recording mode, using the configured start delay.</translation>
+        </message>
+        <message>
             <source>Start/pause/resume recording</source>
             <translation>Start/pause/resume recording</translation>
         </message>

@@ -2099,6 +2099,9 @@ void ScreenRecordingController::setPermissionCheck(PermissionCheck check) {
 
 void ScreenRecordingController::open(const QRect& recordingRegion) {
     m_impl->open(recordingRegion);
+    if (isOpen() && snow_shot::storage::RecordingSettings().autoStartOnOpen()) {
+        m_impl->start();
+    }
 }
 
 bool ScreenRecordingController::isOpen() const {

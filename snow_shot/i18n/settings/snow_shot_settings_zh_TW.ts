@@ -3853,6 +3853,14 @@
             <translation>開始新的截圖作業或進入固定到螢幕標註模式時，自動啟用上次使用的標註工具，而不是移動工具</translation>
         </message>
         <message>
+            <source>Start recording immediately</source>
+            <translation>立即開始錄製</translation>
+        </message>
+        <message>
+            <source>Start recording when entering recording mode, using the configured start delay.</source>
+            <translation>進入錄製模式時開始錄製，並遵循已設定的啟動延遲。</translation>
+        </message>
+        <message>
             <source>Start/pause/resume recording</source>
             <translation>開始/暫停/繼續錄影</translation>
         </message>

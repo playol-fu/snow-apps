@@ -491,6 +491,8 @@ class RecordingSettings final {
     bool setEncodingPreset(const QString& preset) const;
     [[nodiscard]] bool captureToolbarInRecording() const;
     bool setCaptureToolbarInRecording(bool capture) const;
+    [[nodiscard]] bool autoStartOnOpen() const;
+    bool setAutoStartOnOpen(bool enabled) const;
     [[nodiscard]] bool autoExitAfterRecordingEnds() const;
     bool setAutoExitAfterRecordingEnds(bool enabled) const;
     [[nodiscard]] bool notifyAfterExportCompletes() const;
