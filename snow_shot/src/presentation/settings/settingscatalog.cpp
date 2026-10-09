@@ -2898,6 +2898,14 @@ QVector<SettingsPageDefinition> builtInPages() {
                      screenshotOcrActionItem(),
                      screenshotDoubleClickActionItem(),
                      screenshotMiddleClickActionItem(),
+                     switchItem(
+                         QStringLiteral("screenshot.middle-click-confirms-selection"),
+                         QT_TRANSLATE_NOOP("SettingsCatalog", "Middle click confirms selection"),
+                         QT_TRANSLATE_NOOP("SettingsCatalog",
+                                           "Confirm the highlighted region before running the "
+                                           "middle mouse button action."),
+                         QStringLiteral("screenshot/middle_click_confirms_selection"),
+                         SettingsSwitchBinding::ScreenshotMiddleClickConfirmsSelection),
                      quickSelectionModificationItem(),
                      screenshotShutterSoundNotificationItem(),
                      screenshotConfirmBeforeExitingViaShortcutItem(),
@@ -4579,6 +4587,9 @@ QStringList SettingsCatalog::validationErrors() const {
                         break;
                     case SettingsSwitchBinding::TrayEnabled:
                         expectedKey = QStringLiteral("tray/enabled");
+                        break;
+                    case SettingsSwitchBinding::ScreenshotMiddleClickConfirmsSelection:
+                        expectedKey = QStringLiteral("screenshot/middle_click_confirms_selection");
                         break;
                     case SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy:
                         expectedKey = QStringLiteral("screenshot/auto_save_after_copy");

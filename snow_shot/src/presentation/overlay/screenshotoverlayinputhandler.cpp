@@ -1194,8 +1194,16 @@ void ScreenshotOverlayInputHandler::handleUnhandledLeftDoubleClick() {
 }
 
 void ScreenshotOverlayInputHandler::handleUnhandledMiddleClick() {
-    executeConfiguredCompletionAction(
-        snow_shot::storage::ScreenshotSettings().middleMouseButtonAction());
+    const snow_shot::storage::ScreenshotSettings settings;
+    const QString action = settings.middleMouseButtonAction();
+    if (settings.middleClickConfirmsSelection() && action != QStringLiteral("none") &&
+        m_context.interaction.selecting() && !m_context.interaction.dragging() &&
+        !effectDragActive() && !m_externalDragActive && !customRegionInputActive() &&
+        !m_consumeRegionRelease && m_context.selection.hasPixelSelection()) {
+        confirmSelection([this, action] { executeConfiguredCompletionAction(action); });
+        return;
+    }
+    executeConfiguredCompletionAction(action);
 }
 
 void ScreenshotOverlayInputHandler::executeConfiguredCompletionAction(const QString& action) {

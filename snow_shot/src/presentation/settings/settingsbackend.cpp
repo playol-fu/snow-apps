@@ -810,6 +810,8 @@ bool BuiltInSettingsBackend::switchValue(SettingsSwitchBinding binding) const {
         return storage::FloatingToolbarSettings().enabled();
     case SettingsSwitchBinding::TrayEnabled:
         return storage::TraySettings().enabled();
+    case SettingsSwitchBinding::ScreenshotMiddleClickConfirmsSelection:
+        return storage::ScreenshotSettings().middleClickConfirmsSelection();
     case SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy:
         return storage::ScreenshotSettings().autoSaveAfterCopy();
     case SettingsSwitchBinding::ScreenshotQuickSelectionModification:
@@ -1043,6 +1045,9 @@ bool BuiltInSettingsBackend::applySwitchValue(SettingsSwitchBinding binding, boo
     if (binding == SettingsSwitchBinding::TrayEnabled) {
         return storage::TraySettings().setEnabled(value);
     }
+    if (binding == SettingsSwitchBinding::ScreenshotMiddleClickConfirmsSelection) {
+        return storage::ScreenshotSettings().setMiddleClickConfirmsSelection(value);
+    }
     if (binding == SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy) {
         return storage::ScreenshotSettings().setAutoSaveAfterCopy(value);
     }
@@ -1180,6 +1185,7 @@ bool BuiltInSettingsBackend::applySwitchValue(SettingsSwitchBinding binding, boo
     case SettingsSwitchBinding::ShowEditSelectionToolbar:
     case SettingsSwitchBinding::FloatingToolbarEnabled:
     case SettingsSwitchBinding::TrayEnabled:
+    case SettingsSwitchBinding::ScreenshotMiddleClickConfirmsSelection:
     case SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy:
     case SettingsSwitchBinding::ScreenshotQuickSelectionModification:
     case SettingsSwitchBinding::ScreenshotShowCursor:
@@ -2266,6 +2272,9 @@ bool BuiltInSettingsBackend::resetSection(SettingsSectionReset reset) {
                    {QStringLiteral("screenshot/middle_mouse_button_action"),
                     storage::ConfigurationSchema::defaultValue(
                         QStringLiteral("screenshot/middle_mouse_button_action"))},
+                   {QStringLiteral("screenshot/middle_click_confirms_selection"),
+                    storage::ConfigurationSchema::defaultValue(
+                        QStringLiteral("screenshot/middle_click_confirms_selection"))},
                    {QStringLiteral("screenshot/quick_selection_modification"),
                     storage::ConfigurationSchema::defaultValue(
                         QStringLiteral("screenshot/quick_selection_modification"))},

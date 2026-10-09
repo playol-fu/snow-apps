@@ -922,6 +922,14 @@ bool ScreenshotSettings::setMiddleMouseButtonAction(const QString& action) const
     return cache().setValue(QStringLiteral("screenshot/middle_mouse_button_action"), action);
 }
 
+bool ScreenshotSettings::middleClickConfirmsSelection() const {
+    return cache().value(QStringLiteral("screenshot/middle_click_confirms_selection")).toBool();
+}
+
+bool ScreenshotSettings::setMiddleClickConfirmsSelection(bool enabled) const {
+    return cache().setValue(QStringLiteral("screenshot/middle_click_confirms_selection"), enabled);
+}
+
 bool ScreenshotSettings::quickSelectionModification() const {
     return cache().value(QStringLiteral("screenshot/quick_selection_modification")).toBool();
 }

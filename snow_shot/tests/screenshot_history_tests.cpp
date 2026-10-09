@@ -2229,6 +2229,10 @@ void completionGesturesUseSharedEligibilityAcrossTools() {
         return true;
     };
     actions.copySelectionToClipboard = [&]() { ++directCopies; };
+    actions.pauseIntelligentSelection = [] {};
+    actions.updateOverlayState = [] {};
+    actions.showToolbar = [] {};
+    actions.selectionConfirmed = [] {};
     ScreenshotOverlayInputHandler handler({
         captureState,
         interaction,
@@ -2245,7 +2249,18 @@ void completionGesturesUseSharedEligibilityAcrossTools() {
             "completion gestures must not run while the initial selection is active");
 
     selection.setSelectionRect(QRectF(1, 2, 20, 21));
-    interaction.confirmSelection();
+    require(settings.setMiddleMouseButtonAction(QStringLiteral("pin")) &&
+                settings.setMiddleClickConfirmsSelection(false),
+            "configure legacy middle-click behavior");
+    handler.handleUnhandledMiddleClick();
+    require(dispatched.isEmpty() && interaction.selecting(),
+            "disabled immediate middle-click must require selection confirmation");
+    require(settings.setMiddleClickConfirmsSelection(true), "enable immediate middle-click");
+    handler.handleUnhandledMiddleClick();
+    require(dispatched == QStringList{QStringLiteral("pin_to_screen")} && !interaction.selecting(),
+            "middle-click must confirm and pin the highlighted region without a left-click");
+    dispatched.clear();
+    require(settings.setMiddleMouseButtonAction(QStringLiteral("save")), "restore middle action");
     handler.handleUnhandledLeftDoubleClick();
     require(dispatched == QStringList{QStringLiteral("copy_to_clipboard")},
             "double-click must use the Copy toolbar command for the confirmed Move tool");

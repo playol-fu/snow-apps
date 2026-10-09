@@ -1813,6 +1813,10 @@
             <translation>使用快速鍵結束截圖前確認</translation>
         </message>
         <message>
+            <source>Confirm the highlighted region before running the middle mouse button action.</source>
+            <translation>執行滑鼠中鍵操作前確認反白選取區域。</translation>
+        </message>
+        <message>
             <source>Connect AI clients to Snow Shot</source>
             <translation>將 AI 用戶端連線至 Snow Shot</translation>
         </message>
@@ -2691,6 +2695,10 @@
         <message>
             <source>Middle Mouse Button Action</source>
             <translation>滑鼠中鍵操作</translation>
+        </message>
+        <message>
+            <source>Middle click confirms selection</source>
+            <translation>中鍵確認選取區域</translation>
         </message>
         <message>
             <source>Middle mouse button action</source>

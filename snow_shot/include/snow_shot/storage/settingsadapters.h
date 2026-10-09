@@ -237,6 +237,8 @@ class ScreenshotSettings final {
     bool setDoubleClickAction(const QString& action) const;
     [[nodiscard]] QString middleMouseButtonAction() const;
     bool setMiddleMouseButtonAction(const QString& action) const;
+    [[nodiscard]] bool middleClickConfirmsSelection() const;
+    bool setMiddleClickConfirmsSelection(bool enabled) const;
     [[nodiscard]] bool quickSelectionModification() const;
     bool setQuickSelectionModification(bool enabled) const;
     [[nodiscard]] QString selectionResizeMode() const;

@@ -1813,6 +1813,10 @@
             <translation>Confirm before exiting screenshot via shortcut</translation>
         </message>
         <message>
+            <source>Confirm the highlighted region before running the middle mouse button action.</source>
+            <translation>Confirm the highlighted region before running the middle mouse button action.</translation>
+        </message>
+        <message>
             <source>Connect AI clients to Snow Shot</source>
             <translation>Connect AI clients to Snow Shot</translation>
         </message>
@@ -2691,6 +2695,10 @@
         <message>
             <source>Middle Mouse Button Action</source>
             <translation>Middle Mouse Button Action</translation>
+        </message>
+        <message>
+            <source>Middle click confirms selection</source>
+            <translation>Middle click confirms selection</translation>
         </message>
         <message>
             <source>Middle mouse button action</source>

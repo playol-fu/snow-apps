@@ -384,10 +384,8 @@ void settingsSchemaDefaultsAndValidationAreComplete() {
 #else
             defaultValue("global_shortcuts/screenshot").toArray() ==
                 structuredShortcuts(QJsonArray{QStringLiteral("Print")}) &&
-            defaultValue("global_shortcuts/screenshot_copy").toArray() ==
-                QJsonArray() &&
-            defaultValue("global_shortcuts/pin_clipboard_content").toArray() ==
-                QJsonArray() &&
+            defaultValue("global_shortcuts/screenshot_copy").toArray() == QJsonArray() &&
+            defaultValue("global_shortcuts/pin_clipboard_content").toArray() == QJsonArray() &&
             defaultValue("global_shortcuts/restore_last_closed_windows").toArray().isEmpty() &&
 #endif
             defaultValue("global_shortcuts/pin_selected_files").toArray().isEmpty() &&
@@ -403,6 +401,7 @@ void settingsSchemaDefaultsAndValidationAreComplete() {
                 structuredShortcuts(QJsonArray{QStringLiteral("Ctrl+Shift+S")}) &&
             defaultValue("screenshot_shortcuts/save_as_file").toArray() ==
                 structuredShortcuts(QJsonArray{QStringLiteral("Ctrl+S")}) &&
+            defaultValue("screenshot/middle_click_confirms_selection").toBool() &&
             !defaultValue("screenshot/auto_save_after_copy").toBool() &&
             !defaultValue("screenshot/copy_image_file_to_clipboard").toBool() &&
             defaultValue("screenshot/image_save_directory").toString() ==

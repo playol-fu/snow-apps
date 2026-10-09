@@ -1435,6 +1435,8 @@ const QVector<ConfigurationSchemaEntry> kRawEntries = {
      std::nullopt,
      {QStringLiteral("copy"), QStringLiteral("save"), QStringLiteral("quick_save"),
       QStringLiteral("pin"), QStringLiteral("none")}},
+    {QStringLiteral("screenshot/middle_click_confirms_selection"), true,
+     ConfigurationValueKind::Boolean},
     {QStringLiteral("screenshot/quick_selection_modification"), true,
      ConfigurationValueKind::Boolean},
     {QStringLiteral("screenshot/selection_resize_mode"),
