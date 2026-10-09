@@ -24,6 +24,7 @@ enum class CaptureHistorySource {
     PinnedToScreen,
     CurrentMonitor,
     FocusedWindow,
+    Recognition,
 };
 
 struct PersistedSelection {

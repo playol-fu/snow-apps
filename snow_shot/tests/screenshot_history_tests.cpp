@@ -5,6 +5,7 @@
 #include "snow_shot/presentation/screenshotregionpreferences.h"
 #include "snow_shot/presentation/screenshotregiontypeshortcut.h"
 #include "snow_shot/presentation/screenshothistoryservice.h"
+#include "snow_shot/presentation/screenshotselectionexportworkflowports.h"
 #include "snow_shot/presentation/directcapturehistory.h"
 #include "snowimageqtcodec.h"
 
@@ -448,6 +449,76 @@ void failedPublicationsReleaseMetadata(const QString& root) {
         require(ScreenshotHistoryServiceTestAccess::records(history).isEmpty(),
                 "failed publication retained its history placeholder");
     }
+}
+
+class RecognitionHistoryComposer final : public ScreenshotSelectionImageComposerPort {
+  public:
+    ImageCallback pending;
+    bool requestSelectionResult(const QRect&, const ScreenshotResultStyle&, QObject*,
+                                ImageCallback callback) override {
+        pending = std::move(callback);
+        return true;
+    }
+    bool requestSelectionClipboard(const QRect&, const ScreenshotResultStyle&, QObject*,
+                                   ClipboardCallback) override {
+        return false;
+    }
+    std::optional<ScreenshotPinnedSelectionRequest>
+    preparePinnedSelection(const QRect&, const ScreenshotResultStyle&) const override {
+        return std::nullopt;
+    }
+    bool schedulePinnedSelection(ScreenshotPinnedSelectionRequest, QObject*,
+                                 PinRequestCallback) override {
+        return false;
+    }
+};
+
+void recognitionSnapshotsRespectSettingsAndHistoryPolicy(const QString& root) {
+    auto repository = storage::makeCaptureHistoryRepository(root);
+    HistoryMetadataFixture fixture;
+    ScreenshotHistoryService history(fixture.context(), *repository);
+    RecognitionHistoryComposer composer;
+    const storage::ScreenshotSettings settings;
+    require(settings.saveHistoryOnRecognition(), "recognition history defaults to enabled");
+    history.saveRecognitionSnapshot(composer);
+    require(static_cast<bool>(composer.pending),
+            "recognition history must request the rendered selection");
+    fixture.selection.clearSelection();
+    const QImage rendered = solidImage(QSize(16, 16), qRgb(40, 50, 60));
+    auto complete = std::exchange(composer.pending, {});
+    complete(rendered);
+    history.drainPendingWrites();
+    const auto records = repository->records();
+    require(records.size() == 1 &&
+                records.first().source == storage::CaptureHistorySource::Recognition,
+            "recognition must save a restorable screenshot with its own history source");
+    const auto loadedResult = repository->loadResultImage(records.first());
+    require(records.first().result.has_value() && loadedResult,
+            "recognition history must retain the rendered image for Copy and Pin actions");
+    require(equalPixels(*loadedResult, rendered),
+            "recognition history must preserve every rendered image pixel");
+    require(records.first().selection.rectangle == QRect(0, 0, 16, 16),
+            "recognition history must retain the selection captured before asynchronous rendering");
+    fixture.selection.setSelectionRect(QRectF(0, 0, 16, 16));
+    history.saveRecognitionSnapshot(composer);
+    auto failRender = std::exchange(composer.pending, {});
+    failRender(QImage{});
+    history.drainPendingWrites();
+    require(repository->records().size() == 1,
+            "failed rendering must not publish an unusable history entry");
+    require(settings.setSaveHistoryOnRecognition(false), "disable recognition history");
+    history.saveRecognitionSnapshot(composer);
+    history.drainPendingWrites();
+    require(!composer.pending, "disabled recognition history must not render an image");
+    require(repository->records().size() == 1, "disabled recognition history must add no entry");
+    require(settings.setSaveHistoryOnRecognition(true), "restore recognition history");
+    auto policy = repository->policy();
+    policy.enabled = false;
+    require(repository->updatePolicy(policy).get().success, "disable global history policy");
+    history.saveRecognitionSnapshot(composer);
+    history.drainPendingWrites();
+    require(repository->records().size() == 1,
+            "disabled global history must block recognition history");
 }
 
 void historyDestructionDiscardsQueuedCompletion(const QString& root) {
@@ -6279,6 +6350,11 @@ int main(int argc, char** argv) {
         return 0;
     }
     regionOperationsUseMarqueeAndRestoreOnCancel();
+    if (QCoreApplication::arguments().contains(QStringLiteral("--recognition-history-only"))) {
+        recognitionSnapshotsRespectSettingsAndHistoryPolicy(temporary.path());
+        storage::ApplicationStorage::instance().shutdown();
+        return 0;
+    }
     if (QCoreApplication::arguments().contains(QStringLiteral("--completion-gestures-only"))) {
         completionGesturesUseSharedEligibilityAcrossTools();
         storage::ApplicationStorage::instance().shutdown();

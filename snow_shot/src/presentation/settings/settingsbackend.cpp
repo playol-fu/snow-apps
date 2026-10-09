@@ -814,6 +814,8 @@ bool BuiltInSettingsBackend::switchValue(SettingsSwitchBinding binding) const {
         return storage::ScreenshotSettings().middleClickConfirmsSelection();
     case SettingsSwitchBinding::ScreenRecordingAutoStartOnOpen:
         return storage::RecordingSettings().autoStartOnOpen();
+    case SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition:
+        return storage::ScreenshotSettings().saveHistoryOnRecognition();
     case SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy:
         return storage::ScreenshotSettings().autoSaveAfterCopy();
     case SettingsSwitchBinding::ScreenshotQuickSelectionModification:
@@ -1053,6 +1055,9 @@ bool BuiltInSettingsBackend::applySwitchValue(SettingsSwitchBinding binding, boo
     if (binding == SettingsSwitchBinding::ScreenRecordingAutoStartOnOpen) {
         return storage::RecordingSettings().setAutoStartOnOpen(value);
     }
+    if (binding == SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition) {
+        return storage::ScreenshotSettings().setSaveHistoryOnRecognition(value);
+    }
     if (binding == SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy) {
         return storage::ScreenshotSettings().setAutoSaveAfterCopy(value);
     }
@@ -1192,6 +1197,7 @@ bool BuiltInSettingsBackend::applySwitchValue(SettingsSwitchBinding binding, boo
     case SettingsSwitchBinding::TrayEnabled:
     case SettingsSwitchBinding::ScreenshotMiddleClickConfirmsSelection:
     case SettingsSwitchBinding::ScreenRecordingAutoStartOnOpen:
+    case SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition:
     case SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy:
     case SettingsSwitchBinding::ScreenshotQuickSelectionModification:
     case SettingsSwitchBinding::ScreenshotShowCursor:
@@ -2281,6 +2287,9 @@ bool BuiltInSettingsBackend::resetSection(SettingsSectionReset reset) {
                    {QStringLiteral("screenshot/middle_click_confirms_selection"),
                     storage::ConfigurationSchema::defaultValue(
                         QStringLiteral("screenshot/middle_click_confirms_selection"))},
+                   {QStringLiteral("screenshot/save_history_on_recognition"),
+                    storage::ConfigurationSchema::defaultValue(
+                        QStringLiteral("screenshot/save_history_on_recognition"))},
                    {QStringLiteral("screenshot/quick_selection_modification"),
                     storage::ConfigurationSchema::defaultValue(
                         QStringLiteral("screenshot/quick_selection_modification"))},

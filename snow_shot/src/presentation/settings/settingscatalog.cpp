@@ -2899,6 +2899,15 @@ QVector<SettingsPageDefinition> builtInPages() {
                      screenshotDoubleClickActionItem(),
                      screenshotMiddleClickActionItem(),
                      switchItem(
+                         QStringLiteral("screenshot.save-history-on-recognition"),
+                         QT_TRANSLATE_NOOP("SettingsCatalog",
+                                           "Save recognition screenshots to history"),
+                         QT_TRANSLATE_NOOP("SettingsCatalog",
+                                           "Save the selected screenshot when opening text "
+                                           "recognition, table recognition, or translation."),
+                         QStringLiteral("screenshot/save_history_on_recognition"),
+                         SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition),
+                     switchItem(
                          QStringLiteral("screenshot.middle-click-confirms-selection"),
                          QT_TRANSLATE_NOOP("SettingsCatalog", "Middle click confirms selection"),
                          QT_TRANSLATE_NOOP("SettingsCatalog",
@@ -4600,6 +4609,9 @@ QStringList SettingsCatalog::validationErrors() const {
                         break;
                     case SettingsSwitchBinding::ScreenRecordingAutoStartOnOpen:
                         expectedKey = QStringLiteral("screen_recording/auto_start_on_open");
+                        break;
+                    case SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition:
+                        expectedKey = QStringLiteral("screenshot/save_history_on_recognition");
                         break;
                     case SettingsSwitchBinding::ScreenshotAutoSaveAfterCopy:
                         expectedKey = QStringLiteral("screenshot/auto_save_after_copy");

@@ -3695,6 +3695,12 @@ if(SNOW_SHOT_BUILD_TESTS)
         NAME snow-shot-screenshot-completion-gesture-tests
         COMMAND snow-shot-screenshot-history-tests --completion-gestures-only
     )
+    add_test(NAME snow-shot-recognition-history-tests
+        COMMAND snow-shot-screenshot-history-tests --recognition-history-only -platform offscreen)
+    set_tests_properties(snow-shot-recognition-history-tests PROPERTIES
+        ENVIRONMENT "${_SNOW_SHOT_OFFSCREEN_QPA_ENVIRONMENT}"
+        ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<TARGET_FILE_DIR:Qt6::Core>"
+        LABELS "unit" RUN_SERIAL TRUE TIMEOUT 60)
     set_tests_properties(
         snow-shot-direct-capture-history-tests
         snow-shot-history-metadata-lifecycle-tests

@@ -930,6 +930,14 @@ bool ScreenshotSettings::setMiddleClickConfirmsSelection(bool enabled) const {
     return cache().setValue(QStringLiteral("screenshot/middle_click_confirms_selection"), enabled);
 }
 
+bool ScreenshotSettings::saveHistoryOnRecognition() const {
+    return cache().value(QStringLiteral("screenshot/save_history_on_recognition")).toBool();
+}
+
+bool ScreenshotSettings::setSaveHistoryOnRecognition(bool enabled) const {
+    return cache().setValue(QStringLiteral("screenshot/save_history_on_recognition"), enabled);
+}
+
 bool ScreenshotSettings::quickSelectionModification() const {
     return cache().value(QStringLiteral("screenshot/quick_selection_modification")).toBool();
 }

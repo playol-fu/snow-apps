@@ -2651,6 +2651,9 @@ void ScreenshotController::Impl::setOcrTool() {
     if (!ensureRecognitionFeature()) {
         return;
     }
+    if (m_historyService != nullptr) {
+        m_historyService->saveRecognitionSnapshot(*m_exportService);
+    }
     m_ocrController->activate();
     m_presentationServices->updateOverlayState();
     restoreToolUiAfterScrollingCapture(scrollingCaptureStopped);
@@ -2697,6 +2700,9 @@ void ScreenshotController::Impl::setTableTool() {
     const bool scrollingCaptureStopped = stopScrollingCapture(true);
     if (!ensureRecognitionFeature()) {
         return;
+    }
+    if (m_historyService != nullptr) {
+        m_historyService->saveRecognitionSnapshot(*m_exportService);
     }
     m_ocrController->activateTable();
     m_presentationServices->updateOverlayState();
@@ -2771,6 +2777,9 @@ void ScreenshotController::Impl::setTextTranslationTool() {
     }
     if (!ensureRecognitionFeature()) {
         return;
+    }
+    if (m_historyService != nullptr) {
+        m_historyService->saveRecognitionSnapshot(*m_exportService);
     }
     m_ocrController->activateTextTranslation();
     m_presentationServices->updateOverlayState();

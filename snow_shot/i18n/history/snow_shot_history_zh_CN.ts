@@ -92,6 +92,10 @@
             <translation>截图结果</translation>
         </message>
         <message>
+            <source>Text recognition</source>
+            <translation>文字识别</translation>
+        </message>
+        <message>
             <source>This action cannot be undone</source>
             <translation>此操作无法撤销</translation>
         </message>
@@ -408,6 +412,10 @@
         <message>
             <source>Start date</source>
             <translation>开始日期</translation>
+        </message>
+        <message>
+            <source>Text recognition</source>
+            <translation>文字识别</translation>
         </message>
         <message>
             <source>This action cannot be undone</source>

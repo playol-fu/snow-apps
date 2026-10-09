@@ -403,6 +403,7 @@ void settingsSchemaDefaultsAndValidationAreComplete() {
                 structuredShortcuts(QJsonArray{QStringLiteral("Ctrl+S")}) &&
             defaultValue("screenshot/middle_click_confirms_selection").toBool() &&
             defaultValue("screen_recording/auto_start_on_open").toBool() &&
+            defaultValue("screenshot/save_history_on_recognition").toBool() &&
             !defaultValue("screenshot/auto_save_after_copy").toBool() &&
             !defaultValue("screenshot/copy_image_file_to_clipboard").toBool() &&
             defaultValue("screenshot/image_save_directory").toString() ==

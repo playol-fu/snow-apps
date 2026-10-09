@@ -1438,6 +1438,8 @@ const QVector<ConfigurationSchemaEntry> kRawEntries = {
       QStringLiteral("pin"), QStringLiteral("none")}},
     {QStringLiteral("screenshot/middle_click_confirms_selection"), true,
      ConfigurationValueKind::Boolean},
+    {QStringLiteral("screenshot/save_history_on_recognition"), true,
+     ConfigurationValueKind::Boolean},
     {QStringLiteral("screenshot/quick_selection_modification"), true,
      ConfigurationValueKind::Boolean},
     {QStringLiteral("screenshot/selection_resize_mode"),

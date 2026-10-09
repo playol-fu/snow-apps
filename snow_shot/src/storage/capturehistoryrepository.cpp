@@ -90,6 +90,8 @@ bool validCanvas(const QByteArray& bytes) {
 
 QString sourceText(CaptureHistorySource source) {
     switch (source) {
+    case CaptureHistorySource::Recognition:
+        return QStringLiteral("recognition");
     case CaptureHistorySource::CopiedToClipboard:
         return QStringLiteral("copied_to_clipboard");
     case CaptureHistorySource::SavedToFile:
@@ -255,9 +257,9 @@ bool parseRecord(const QJsonObject& object, StoredRecord* stored) {
     }
     bool sourceFound = false;
     for (const auto source :
-         {CaptureHistorySource::CopiedToClipboard, CaptureHistorySource::SavedToFile,
-          CaptureHistorySource::PinnedToScreen, CaptureHistorySource::CurrentMonitor,
-          CaptureHistorySource::FocusedWindow}) {
+         {CaptureHistorySource::Recognition, CaptureHistorySource::CopiedToClipboard,
+          CaptureHistorySource::SavedToFile, CaptureHistorySource::PinnedToScreen,
+          CaptureHistorySource::CurrentMonitor, CaptureHistorySource::FocusedWindow}) {
         if (object.value(QStringLiteral("source")).toString() == sourceText(source)) {
             record.source = source;
             sourceFound = true;

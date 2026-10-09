@@ -92,6 +92,10 @@
             <translation>Screenshot result</translation>
         </message>
         <message>
+            <source>Text recognition</source>
+            <translation>Text recognition</translation>
+        </message>
+        <message>
             <source>This action cannot be undone</source>
             <translation>This action cannot be undone</translation>
         </message>
@@ -414,6 +418,10 @@
         <message>
             <source>Start date</source>
             <translation>Start date</translation>
+        </message>
+        <message>
+            <source>Text recognition</source>
+            <translation>Text recognition</translation>
         </message>
         <message>
             <source>This action cannot be undone</source>

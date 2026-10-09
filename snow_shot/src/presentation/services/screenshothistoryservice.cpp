@@ -1,5 +1,6 @@
 #include "snow_shot/platform/applicationqos.h"
 #include "snow_shot/presentation/screenshothistoryservice.h"
+#include "snow_shot/presentation/screenshotselectionexportworkflowports.h"
 #include "snow_shot/presentation/screenshotdefaultstyles.h"
 #include "snow_shot/presentation/screenshotimagefileservice.h"
 #include "snow_shot/storage/applicationstorage.h"
@@ -454,6 +455,31 @@ ScreenshotHistoryService::snapshotCurrent(bool persistent) const {
         return std::nullopt;
     }
     return entry;
+}
+
+void ScreenshotHistoryService::saveRecognitionSnapshot(
+    ScreenshotSelectionImageComposerPort& composer) {
+    if (!snow_shot::storage::ScreenshotSettings().saveHistoryOnRecognition()) {
+        return;
+    }
+    auto snapshot = snapshotCurrent(true);
+    if (!snapshot) {
+        return;
+    }
+    auto entry = std::make_shared<ScreenshotHistoryEntry>(std::move(*snapshot));
+    entry->source = snow_shot::storage::CaptureHistorySource::Recognition;
+    const QPointer<ScreenshotHistoryService> receiver(this);
+    if (!composer.requestSelectionResult(m_context.selection.pixelSelection(),
+                                         m_context.selection.resultStyle(), this,
+                                         [receiver, entry](QImage image) {
+                                             if (!receiver || image.isNull()) {
+                                                 return;
+                                             }
+                                             entry->resultImage = std::move(image);
+                                             receiver->commit(std::move(*entry));
+                                         })) {
+        qWarning("Failed to schedule recognition screenshot history rendering");
+    }
 }
 
 void ScreenshotHistoryService::commit(ScreenshotHistoryEntry entry) {

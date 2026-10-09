@@ -253,6 +253,8 @@ adqt::widgets::AdSelect::Option sourceOption(const QString& value, const QString
 
 QString sourceKey(storage::CaptureHistorySource source) {
     switch (source) {
+    case storage::CaptureHistorySource::Recognition:
+        return QStringLiteral("recognition");
     case storage::CaptureHistorySource::CopiedToClipboard:
         return QStringLiteral("clipboard");
     case storage::CaptureHistorySource::SavedToFile:
@@ -977,6 +979,9 @@ class HistoryEntryWidget final : public QFrame {
 
     void retranslateUi() {
         switch (m_record.source) {
+        case storage::CaptureHistorySource::Recognition:
+            m_sourceLabel->setText(HistoryEntryWidget::tr("Text recognition"));
+            break;
         case storage::CaptureHistorySource::CopiedToClipboard:
             m_sourceLabel->setText(HistoryEntryWidget::tr("Copy to clipboard"));
             break;
@@ -1830,7 +1835,8 @@ void ScreenshotHistoryPageWidget::retranslateUi() {
     {
         const QSignalBlocker blocker(m_sourceFilter);
         m_sourceFilter->setOptions(
-            {sourceOption(QStringLiteral("clipboard"), tr("Copy to clipboard")),
+            {sourceOption(QStringLiteral("recognition"), tr("Text recognition")),
+             sourceOption(QStringLiteral("clipboard"), tr("Copy to clipboard")),
              sourceOption(QStringLiteral("file"), tr("Save as file")),
              sourceOption(QStringLiteral("pinned"), tr("Pin to screen")),
              sourceOption(QStringLiteral("current-monitor"), tr("Current monitor")),

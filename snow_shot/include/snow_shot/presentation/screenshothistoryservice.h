@@ -16,6 +16,7 @@
 class ScreenshotDisplaySession;
 class ScreenshotInteractionState;
 class ScreenshotHistoryValidationQueue;
+class ScreenshotSelectionImageComposerPort;
 class ScreenshotSelectionModel;
 class SnowCanvasRuntime;
 
@@ -45,6 +46,7 @@ class ScreenshotHistoryService final : public QObject {
 
     [[nodiscard]] std::optional<ScreenshotHistoryEntry> snapshotCurrent(bool persistent) const;
     void commit(ScreenshotHistoryEntry entry);
+    void saveRecognitionSnapshot(ScreenshotSelectionImageComposerPort& composer);
     [[nodiscard]] bool navigateToRecord(const QString& recordId);
     [[nodiscard]] bool navigatePrevious();
     [[nodiscard]] bool navigateNext();

@@ -3317,6 +3317,10 @@
             <translation>將辨識結果儲存為圖片</translation>
         </message>
         <message>
+            <source>Save recognition screenshots to history</source>
+            <translation>辨識截圖儲存至歷史</translation>
+        </message>
+        <message>
             <source>Save speaker and microphone audio as separate MP4 tracks for independent editing. Most players play one track at a time.</source>
             <translation>將喇叭和麥克風音訊儲存為獨立的 MP4 音軌，以便分別編輯。大多數播放器一次只播放一個音軌。</translation>
         </message>
@@ -3327,6 +3331,10 @@
         <message>
             <source>Save the confirmed screenshot selection to the configured folder</source>
             <translation>將確認的截圖選區儲存到設定的資料夾</translation>
+        </message>
+        <message>
+            <source>Save the selected screenshot when opening text recognition, table recognition, or translation.</source>
+            <translation>開啟文字辨識、表格辨識或翻譯時儲存所選截圖。</translation>
         </message>
         <message>
             <source>Saved screenshots</source>
