@@ -383,7 +383,7 @@ void settingsSchemaDefaultsAndValidationAreComplete() {
                 QJsonArray{shortcutObject(QStringLiteral("Meta+3"), 20)} &&
 #else
             defaultValue("global_shortcuts/screenshot").toArray() ==
-                structuredShortcuts(QJsonArray{QStringLiteral("F1")}) &&
+                structuredShortcuts(QJsonArray{QStringLiteral("Print")}) &&
             defaultValue("global_shortcuts/screenshot_copy").toArray() ==
                 structuredShortcuts(QJsonArray{QStringLiteral("Ctrl+F1")}) &&
             defaultValue("global_shortcuts/pin_clipboard_content").toArray() ==

@@ -401,7 +401,7 @@ const QVector<ConfigurationSchemaEntry> kRawEntries = {
      std::nullopt,
      {QStringLiteral("blur"), QStringLiteral("background_fill")}},
     {QStringLiteral("global_shortcuts/screenshot"),
-     QJsonArray{QStringLiteral("F1")},
+     QJsonArray{QStringLiteral("Print")},
      ConfigurationValueKind::StringList,
      std::nullopt,
      {},
