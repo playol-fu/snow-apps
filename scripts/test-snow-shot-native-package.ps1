@@ -4,6 +4,7 @@ param(
     [ValidateSet('x64', 'arm64')][string]$Architecture = 'x64',
     [string]$BuildDirectory,
     [string]$OutputDirectory,
+    [switch]$PortableOnly,
     [switch]$FunctionsOnly
 )
 $ErrorActionPreference = 'Stop'
@@ -183,8 +184,9 @@ $null = New-Item -ItemType Directory -Path $work
 $validated = @{}
 $installers = @()
 try {
-    foreach ($product in @('snow-shot', 'snow-shot-mini')) {
-        $variants = if ($product -eq 'snow-shot-mini') { @('online', 'portable') } else { @('online', 'offline', 'portable') }
+    $products = if ($PortableOnly) { @('snow-shot') } else { @('snow-shot', 'snow-shot-mini') }
+    foreach ($product in $products) {
+        $variants = if ($PortableOnly) { @('portable') } elseif ($product -eq 'snow-shot-mini') { @('online', 'portable') } else { @('online', 'offline', 'portable') }
         foreach ($variant in $variants) {
             $base = "$product-$version-$($target.Platform)-$variant"
             $archiveBase = if ($variant -eq 'portable') { $base } else { "$base-update" }

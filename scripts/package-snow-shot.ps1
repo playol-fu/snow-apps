@@ -6,6 +6,7 @@ param(
     [string]$OcrRuntimeArchive,
     [ValidateRange(1, 256)][int]$Parallelism = 4,
     [switch]$SkipBuild,
+    [switch]$PortableOnly,
     [switch]$PrepareOcrRuntimeOnly
 )
 
@@ -59,9 +60,11 @@ function Assert-SnowNativeStartup {
     }
 }
 
-. (Join-Path $PSScriptRoot 'snow-nsis-environment.ps1')
-$nsisPath = Get-SnowNsisCompiler
-$env:Path = "$(Split-Path -Parent $nsisPath);$env:Path"
+if (-not $PortableOnly) {
+    . (Join-Path $PSScriptRoot 'snow-nsis-environment.ps1')
+    $nsisPath = Get-SnowNsisCompiler
+    $env:Path = "$(Split-Path -Parent $nsisPath);$env:Path"
+}
 
 function Resolve-RepoPath {
     param([Parameter(Mandatory = $true)][string]$Path)
@@ -359,6 +362,7 @@ if (-not $SkipBuild) {
     $configureArguments = @(Get-SnowConfigureArguments -Preset $releasePreset `
         -BuildDirectory $buildDirectory)
     $configureArguments += "-DSNOW_SHOT_OCR_ASSET_MANIFEST=$($ocrAssetManifestPath.Replace('\', '/'))"
+    if ($PortableOnly) { $configureArguments += '-DSNOW_APPS_BUILD_SNOW_SHOT_MINI=OFF' }
     & cmake @configureArguments
     if ($LASTEXITCODE -ne 0) {
         throw "Snow Shot release configuration failed."
@@ -376,7 +380,7 @@ $requiredCacheEntries = @(
     "SNOW_APPS_RELEASE_STATIC:BOOL=ON",
     "SNOW_APPS_QT_STATIC:BOOL=ON",
     "SNOW_APPS_PACKAGE_SNOW_SHOT:BOOL=ON",
-    "SNOW_APPS_BUILD_SNOW_SHOT_MINI:BOOL=ON",
+    "SNOW_APPS_BUILD_SNOW_SHOT_MINI:BOOL=$(if ($PortableOnly) { 'OFF' } else { 'ON' })",
     "SNOW_SHOT_IMAGE_CODEC_BACKEND_STATIC:INTERNAL=ON",
     "QT_FEATURE_static:INTERNAL=ON",
     "QT_FEATURE_timezone:INTERNAL=ON",
@@ -398,7 +402,8 @@ foreach ($entry in $requiredCacheEntries) {
 }
 
 if (-not $SkipBuild) {
-    & cmake --build $buildDirectory --config Release --target snow_shot snow_shot_mini --parallel $Parallelism
+    [string[]]$buildTargets = if ($PortableOnly) { @('snow_shot') } else { @('snow_shot', 'snow_shot_mini') }
+    & cmake --build $buildDirectory --config Release --target @buildTargets --parallel $Parallelism
     if ($LASTEXITCODE -ne 0) {
         throw "Snow Shot release build failed."
     }
@@ -1354,6 +1359,7 @@ $producedPackages = @()
 Assert-SnowNativeStartup -Stage $variantStages.online -Executable snow_shot -Updater snow-shot-updater -Version $packageVersion
 $nativeProbesPassed = $nativeTarget
 foreach ($variant in @('online', 'offline')) {
+    if ($PortableOnly) { continue }
     $updateName = "snow-shot-$packageVersion-$ocrPlatform-$variant-update"
     $updatePath = Join-Path $buildDirectory "$updateName.zip"
     New-DeterministicZip -SourceDirectory $variantStages[$variant] -Destination $updatePath
@@ -1372,6 +1378,7 @@ foreach ($variant in @('online', 'offline')) {
 $nsisWorkDirectory = Join-Path $repoRoot "build\nsis-$Architecture"
 New-Item -ItemType Directory -Path $nsisWorkDirectory -Force | Out-Null
 foreach ($variant in @("online", "offline")) {
+    if ($PortableOnly) { continue }
     $packageBaseName = "snow-shot-$packageVersion-$ocrPlatform-$variant"
     $variantConfig = Join-Path $buildDirectory "CPackConfig-$variant.cmake"
     $baseConfigPath = $cpackConfig.Replace('\', '/')
@@ -1499,4 +1506,4 @@ Write-Output "OCR runtime upload artifact: $runtimeArchivePath"
 Write-Output "OCR runtime checksum: $runtimeArchiveChecksum"
 Write-Output "OCR runtime manifest: $runtimeReleaseManifest"
 
-. (Join-Path $PSScriptRoot "package-snow-shot-mini.ps1")
+if (-not $PortableOnly) { . (Join-Path $PSScriptRoot "package-snow-shot-mini.ps1") }
