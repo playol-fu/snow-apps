@@ -37,6 +37,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify release version before preparing tools
+        shell: pwsh
+        run: |
+          $version = [regex]::Match((Get-Content -Raw CMakeLists.txt), 'set\(SNOW_SHOT_VERSION "([^"]+)"\)').Groups[1].Value
+          if (-not $version) { throw 'Missing Snow Shot version.' }
+          $tag = "v${version}-windows-x64-portable"
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -cne $tag) {
+            throw "Release tag '$env:GITHUB_REF_NAME' does not match application version '$version'. Expected '$tag'."
+          }
+
       - name: Verify workflow toolchain detection
         shell: pwsh
         run: |

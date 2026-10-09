@@ -15,6 +15,37 @@ WORKFLOW = ROOT / '.github/workflows/snow-shot-portable-release.yml'
 
 
 class PortableRelease(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'nt', 'PowerShell command fixtures require Windows')
+    def test_release_version_is_checked_before_tool_preparation(self):
+        shell = shutil.which('pwsh') or shutil.which('powershell')
+        if not shell:
+            self.skipTest('PowerShell is required')
+        source = WORKFLOW.read_text(encoding='utf-8')
+        guard_name = 'Verify release version before preparing tools'
+        self.assertLess(source.index(guard_name), source.index('Install Rust toolchain'))
+        guard = source.split('      - name: ' + guard_name, 1)[1].split('      - name:', 1)[0]
+        script = "$ErrorActionPreference = 'Stop'\n" + textwrap.dedent(guard.split('        run: |\n', 1)[1])
+        (ROOT / 'build').mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='portable-version-test-', dir=ROOT / 'build') as fixture:
+            cmake = Path(fixture) / 'CMakeLists.txt'
+            cases = [
+                ('tag', 'v1.2.5-windows-x64-portable', '1.2.5', True),
+                ('tag', 'v1.2.5-windows-x64-portable', '1.2.4', False),
+                ('branch', 'main', '1.2.5', True),
+                ('branch', 'main', '', False),
+            ]
+            for ref_type, ref_name, version, succeeds in cases:
+                with self.subTest(ref_type=ref_type, ref_name=ref_name, version=version):
+                    cmake.write_text(f'set(SNOW_SHOT_VERSION "{version}")\n', encoding='utf-8')
+                    environment = {**os.environ, 'GITHUB_REF_TYPE': ref_type, 'GITHUB_REF_NAME': ref_name}
+                    result = subprocess.run([shell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy',
+                                             'Bypass', '-Command', script], cwd=fixture, env=environment,
+                                            capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode == 0, succeeds, result.stdout + result.stderr)
+                    if not succeeds:
+                        expected = 'Missing Snow Shot version.' if not version else 'Expected'
+                        self.assertIn(expected, result.stdout + result.stderr)
+
     def test_workflow_only_builds_and_publishes_portable(self):
         source = WORKFLOW.read_text(encoding='utf-8')
         self.assertIn('contents: write', source)
