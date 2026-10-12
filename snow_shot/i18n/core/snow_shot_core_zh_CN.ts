@@ -94,14 +94,6 @@ so every moment on screen can be expressed clearly and shared easily.</source>
             <translation>当前版本：%1</translation>
         </message>
         <message>
-            <source>Discover more features and ways to use it</source>
-            <translation>发现更多功能与使用方式</translation>
-        </message>
-        <message>
-            <source>Discussion and support · Group No. %1</source>
-            <translation>交流与答疑 · 群号 %1</translation>
-        </message>
-        <message>
             <source>Download from GitHub</source>
             <translation>从 GitHub 下载</translation>
         </message>
@@ -158,10 +150,6 @@ so every moment on screen can be expressed clearly and shared easily.</source>
             <translation>让下一次体验更好</translation>
         </message>
         <message>
-            <source>Official website</source>
-            <translation>官方网站</translation>
-        </message>
-        <message>
             <source>Pin to screen</source>
             <translation>固定到屏幕</translation>
         </message>
@@ -172,14 +160,6 @@ so every moment on screen can be expressed clearly and shared easily.</source>
         <message>
             <source>Preview</source>
             <translation>预览版</translation>
-        </message>
-        <message>
-            <source>QQ Group 2</source>
-            <translation>QQ 交流群 2</translation>
-        </message>
-        <message>
-            <source>QQ Group 3</source>
-            <translation>QQ 交流群 3</translation>
         </message>
         <message>
             <source>Ready to install %1</source>

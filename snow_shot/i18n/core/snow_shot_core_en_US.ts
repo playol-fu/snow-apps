@@ -94,14 +94,6 @@ so every moment on screen can be expressed clearly and shared easily.</translati
             <translation>Current version: %1</translation>
         </message>
         <message>
-            <source>Discover more features and ways to use it</source>
-            <translation>Discover more features and ways to use it</translation>
-        </message>
-        <message>
-            <source>Discussion and support · Group No. %1</source>
-            <translation>Discussion and support · Group No. %1</translation>
-        </message>
-        <message>
             <source>Download from GitHub</source>
             <translation>Download from GitHub</translation>
         </message>
@@ -158,10 +150,6 @@ so every moment on screen can be expressed clearly and shared easily.</translati
             <translation>Make the next experience better</translation>
         </message>
         <message>
-            <source>Official website</source>
-            <translation>Official website</translation>
-        </message>
-        <message>
             <source>Pin to screen</source>
             <translation>Pin to screen</translation>
         </message>
@@ -172,14 +160,6 @@ so every moment on screen can be expressed clearly and shared easily.</translati
         <message>
             <source>Preview</source>
             <translation>Preview</translation>
-        </message>
-        <message>
-            <source>QQ Group 2</source>
-            <translation>QQ Group 2</translation>
-        </message>
-        <message>
-            <source>QQ Group 3</source>
-            <translation>QQ Group 3</translation>
         </message>
         <message>
             <source>Ready to install %1</source>

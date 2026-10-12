@@ -215,8 +215,7 @@ void projectLinkSurfacesMatchStandardButtons() {
     for (const auto appearance : {styles::ThemeAppearance::Light, styles::ThemeAppearance::Dark}) {
         manager.setThemeAppearance(appearance);
         flushEvents();
-        for (const char* name : {"aboutWebsite", "aboutSourceCode", "aboutFeedback",
-                                 "aboutQqGroup2", "aboutQqGroup3"}) {
+        for (const char* name : {"aboutSourceCode", "aboutFeedback"}) {
             auto* button = child<AdButton>(page, name);
             require(button->buttonStyle() == AdButton::ButtonStyle::Outline &&
                         button->accentRole() == AdButton::AccentRole::Neutral,
@@ -283,13 +282,10 @@ void projectLinksAreExplicitAccessibleAndRecoverable() {
     require(opened.isEmpty(), "About does not open links or check for updates on construction");
     snapshot(page, QStringLiteral("about-actions"));
     const QString project = QStringLiteral(SNOW_SHOT_TEST_PROJECT_URL);
-    const std::array<std::pair<const char*, QUrl>, 6> links{{
-        {"aboutWebsite", QUrl(QStringLiteral(SNOW_SHOT_TEST_WEBSITE_URL))},
+    const std::array<std::pair<const char*, QUrl>, 3> links{{
         {"aboutSourceCode", QUrl(project)},
         {"aboutFeedback", QUrl(project + QStringLiteral("/issues"))},
         {"aboutReleaseNotes", QUrl(project + QStringLiteral("/releases"))},
-        {"aboutQqGroup2", QUrl(QStringLiteral(SNOW_SHOT_TEST_QQ_GROUP_2_URL))},
-        {"aboutQqGroup3", QUrl(QStringLiteral(SNOW_SHOT_TEST_QQ_GROUP_3_URL))},
     }};
     for (const auto& [name, url] : links) {
         auto* button = child<QAbstractButton>(page, name);
@@ -311,7 +307,7 @@ void projectLinksAreExplicitAccessibleAndRecoverable() {
     page.resize(360, 240);
     flushEvents();
     canOpen = false;
-    child<QAbstractButton>(page, "aboutWebsite")->click();
+    child<QAbstractButton>(page, "aboutSourceCode")->click();
     flushEvents();
     auto* error = child<QLabel>(page, "aboutLinkError");
     require(!error->isHidden() && error->text().contains(links.front().second.toDisplayString()) &&
@@ -338,7 +334,7 @@ void projectLinksAreExplicitAccessibleAndRecoverable() {
         flushEvents();
     }
     canOpen = true;
-    child<QAbstractButton>(page, "aboutWebsite")->click();
+    child<QAbstractButton>(page, "aboutSourceCode")->click();
     require(error->isHidden() && error->text().isEmpty(), "successful retries clear link errors");
     page.hide();
 }
@@ -366,9 +362,8 @@ void largerTypeKeepsEveryActionReachable() {
     auto* artwork = child<QWidget>(page, "aboutArtwork");
     require(artwork->width() <= scroll->viewport()->width() && artwork->height() > 0,
             "artwork scales down to the available width with larger fonts");
-    for (const char* name :
-         {"aboutCopyVersion", "aboutReleaseNotes", "aboutUpdateAction", "aboutWebsite",
-          "aboutSourceCode", "aboutFeedback", "aboutQqGroup2", "aboutQqGroup3"}) {
+    for (const char* name : {"aboutCopyVersion", "aboutReleaseNotes", "aboutUpdateAction",
+                             "aboutSourceCode", "aboutFeedback"}) {
         auto* button = child<QAbstractButton>(page, name);
         scroll->ensureWidgetVisible(button);
         flushEvents();
@@ -925,35 +920,17 @@ void mainNavigationSearchThemesAndLanguages() {
             auto* icon = page->findChild<QLabel*>(QStringLiteral("aboutFeatureIcon%1").arg(i));
             require(icon != nullptr && !icon->pixmap().isNull(), "every feature icon renders");
         }
-        require(child<QAbstractButton>(*page, "aboutWebsite")->accessibleName() ==
-                        translator.translate("AboutPageWidget", "Official website") &&
+        require(child<QAbstractButton>(*page, "aboutSourceCode")->accessibleName() ==
+                        translator.translate("AboutPageWidget", "GitHub") &&
                     child<QWidget>(*page, "aboutArtwork")->accessibleName() ==
                         translator.translate(
                             "AboutPageWidget",
                             "Screenshot selection, annotation tools, and recognized text"),
                 "resource and illustration accessibility copy follows the active language");
-        struct QqGroupCopy {
-            const char* objectName;
-            const char* title;
-            const char* number;
-        };
-        const std::array<QqGroupCopy, 2> qqGroups{{
-            {"aboutQqGroup2", "QQ Group 2", "895818102"},
-            {"aboutQqGroup3", "QQ Group 3", "1037819112"},
-        }};
-        for (const auto& group : qqGroups) {
-            const QString title = translator.translate("AboutPageWidget", group.title);
-            const QString description =
-                translator.translate("AboutPageWidget", "Discussion and support · Group No. %1")
-                    .arg(QString::fromLatin1(group.number));
-            auto* button = child<QAbstractButton>(*page, group.objectName);
-            require(button->accessibleName() == title &&
-                        button->accessibleDescription() == description,
-                    "QQ group cards retranslate their title and description");
-            const QByteArray labelName = QByteArray(group.objectName) + "Description";
-            require(child<QLabel>(*button, labelName.constData())->text() == description,
-                    "QQ group cards display the translated description with the group number");
-        }
+        require(page->findChild<QAbstractButton*>(QStringLiteral("aboutWebsite")) == nullptr &&
+                    page->findChild<QAbstractButton*>(QStringLiteral("aboutQqGroup2")) == nullptr &&
+                    page->findChild<QAbstractButton*>(QStringLiteral("aboutQqGroup3")) == nullptr,
+                "About omits the official website and QQ group cards");
         require(sidebar->currentRoute() == QStringLiteral("/about"),
                 "translated navigation preserves About selection");
         auto* scroll = page->findChild<adqt::widgets::AdScrollArea*>();
@@ -1005,6 +982,13 @@ int main(int argc, char** argv) {
     require(storage.initialize({directory.path(), directory.path(), 8000}).success,
             "initialize isolated storage");
     styles::ThemeManager::instance().initialize(application);
+    if (application.arguments().contains(QStringLiteral("--fork-links-only"))) {
+        projectLinkSurfacesMatchStandardButtons();
+        projectLinksAreExplicitAccessibleAndRecoverable();
+        updatePolicyAndUnavailableCopy();
+        storage.shutdown();
+        return 0;
+    }
     themeAndSkinChangesUpdateOnlyAffectedBackgrounds();
     versionIsExactSelectableAndCopyable();
     absentVersionDoesNotInventARelease();

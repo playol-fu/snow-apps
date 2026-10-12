@@ -366,7 +366,7 @@ struct AboutPageWidget::Ui {
     QWidget* updateActionBlank = nullptr;
     QStackedLayout* updateActions = nullptr;
     QGridLayout* resourceLayout = nullptr;
-    std::array<AboutResourceButton*, 5> resources{};
+    std::array<AboutResourceButton*, 2> resources{};
     QLabel* linkError = nullptr;
     AdDivider* footerDivider = nullptr;
     QBoxLayout* footerLayout = nullptr;
@@ -579,11 +579,8 @@ AboutPageWidget::AboutPageWidget(QWidget* parent, UrlOpener urlOpener,
 
     m_ui->resourceLayout = new QGridLayout;
     m_ui->resources = {
-        new AboutResourceButton(QStringLiteral("aboutWebsite"), outlined::Global(), m_ui->body),
         new AboutResourceButton(QStringLiteral("aboutSourceCode"), outlined::Code(), m_ui->body),
-        new AboutResourceButton(QStringLiteral("aboutFeedback"), outlined::Comment(), m_ui->body),
-        new AboutResourceButton(QStringLiteral("aboutQqGroup2"), outlined::Qq(), m_ui->body),
-        new AboutResourceButton(QStringLiteral("aboutQqGroup3"), outlined::Qq(), m_ui->body)};
+        new AboutResourceButton(QStringLiteral("aboutFeedback"), outlined::Comment(), m_ui->body)};
     m_ui->bodyLayout->addLayout(m_ui->resourceLayout);
     m_ui->linkError = aboutLabel(QStringLiteral("aboutLinkError"), m_ui->body);
     m_ui->linkError->setTextInteractionFlags(Qt::TextSelectableByMouse |
@@ -636,15 +633,9 @@ AboutPageWidget::AboutPageWidget(QWidget* parent, UrlOpener urlOpener,
     connect(m_ui->releaseNotes, &AdButton::clicked, this,
             [this]() { openProjectLink(aboutProjectUrl(QStringLiteral("/releases"))); });
     connect(m_ui->resources[0], &QAbstractButton::clicked, this,
-            [this]() { openProjectLink(QUrl(QStringLiteral(SNOW_SHOT_WEBSITE_URL))); });
-    connect(m_ui->resources[1], &QAbstractButton::clicked, this,
             [this]() { openProjectLink(aboutProjectUrl()); });
-    connect(m_ui->resources[2], &QAbstractButton::clicked, this,
+    connect(m_ui->resources[1], &QAbstractButton::clicked, this,
             [this]() { openProjectLink(aboutProjectUrl(QStringLiteral("/issues"))); });
-    connect(m_ui->resources[3], &QAbstractButton::clicked, this,
-            [this]() { openProjectLink(QUrl(QStringLiteral(SNOW_SHOT_QQ_GROUP_2_URL))); });
-    connect(m_ui->resources[4], &QAbstractButton::clicked, this,
-            [this]() { openProjectLink(QUrl(QStringLiteral(SNOW_SHOT_QQ_GROUP_3_URL))); });
     connect(&themeManager, &styles::ThemeManager::themeChanged, this, &AboutPageWidget::applyTheme);
     connect(&adqt::theme::ThemeManager::instance(), &adqt::theme::ThemeManager::themeChanged, this,
             [this] { updateSkinBackgrounds(); });
@@ -837,22 +828,11 @@ void AboutPageWidget::retranslateUi() {
     m_ui->releaseNotes->setText(tr("Changelog"));
     m_ui->releaseNotes->setAccessibleName(tr("Changelog"));
     m_ui->releaseNotes->setToolTip(aboutProjectUrl(QStringLiteral("/releases")).toDisplayString());
-    m_ui->resources[0]->setCopy(tr("Official website"),
-                                tr("Discover more features and ways to use it"),
-                                QUrl(QStringLiteral(SNOW_SHOT_WEBSITE_URL)));
-    m_ui->resources[1]->setCopy(tr("GitHub"), tr("View the source and improve it together"),
+    m_ui->resources[0]->setCopy(tr("GitHub"), tr("View the source and improve it together"),
                                 aboutProjectUrl());
-    m_ui->resources[2]->setCopy(tr("Feedback and suggestions"),
+    m_ui->resources[1]->setCopy(tr("Feedback and suggestions"),
                                 tr("Make the next experience better"),
                                 aboutProjectUrl(QStringLiteral("/issues")));
-    m_ui->resources[3]->setCopy(
-        tr("QQ Group 2"),
-        tr("Discussion and support · Group No. %1").arg(QStringLiteral("895818102")),
-        QUrl(QStringLiteral(SNOW_SHOT_QQ_GROUP_2_URL)));
-    m_ui->resources[4]->setCopy(
-        tr("QQ Group 3"),
-        tr("Discussion and support · Group No. %1").arg(QStringLiteral("1037819112")),
-        QUrl(QStringLiteral(SNOW_SHOT_QQ_GROUP_3_URL)));
     m_ui->community->setText(tr("Built for daily work, and growing with the community."));
     m_ui->license->setText(
         tr("%1 · %2").arg(tr("GNU General Public License v3.0 or later"),
@@ -927,27 +907,15 @@ void AboutPageWidget::updateLayout() {
         separator->setVisible(!lastInRow);
         separator->setFixedHeight(separatorHeight);
     }
-    // Wide layouts share a six-column grid: the three project links span two columns each
-    // and the two QQ group cards split the second row evenly. Narrow layouts stack.
-    const int resourceColumns = wide ? 6 : 1;
+    const int resourceColumns = wide ? 2 : 1;
     if (m_ui->resourceColumns != resourceColumns) {
         for (auto* resource : m_ui->resources) {
             m_ui->resourceLayout->removeWidget(resource);
         }
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 2; ++i) {
             m_ui->resourceLayout->setColumnStretch(i, i < resourceColumns ? 1 : 0);
-        }
-        if (wide) {
-            for (int i = 0; i < 3; ++i) {
-                m_ui->resourceLayout->addWidget(m_ui->resources[static_cast<size_t>(i)], 0, i * 2,
-                                                1, 2);
-            }
-            m_ui->resourceLayout->addWidget(m_ui->resources[3], 1, 0, 1, 3);
-            m_ui->resourceLayout->addWidget(m_ui->resources[4], 1, 3, 1, 3);
-        } else {
-            for (int i = 0; i < 5; ++i) {
-                m_ui->resourceLayout->addWidget(m_ui->resources[static_cast<size_t>(i)], i, 0);
-            }
+            m_ui->resourceLayout->addWidget(m_ui->resources[static_cast<size_t>(i)],
+                                            i / resourceColumns, i % resourceColumns);
         }
         m_ui->resourceColumns = resourceColumns;
     }
