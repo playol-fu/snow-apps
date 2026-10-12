@@ -364,6 +364,10 @@ void settingsSchemaDefaultsAndValidationAreComplete() {
     const auto defaultValue = [](const char* key) {
         return storage::ConfigurationSchema::defaultValue(QString::fromLatin1(key));
     };
+    require(storage::ConfigurationSchema::defaultValue(
+                QStringLiteral("screen_recording_shortcuts/export")).toArray() ==
+                QJsonArray{QStringLiteral("Ctrl+R")},
+            "Export recording defaults to Ctrl+R");
     require(
         defaultValue("system/auto_start_at_boot").toBool() &&
             defaultValue("network/proxy").toString() == QStringLiteral("none") &&

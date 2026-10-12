@@ -982,7 +982,7 @@ const QVector<ConfigurationSchemaEntry> kRawEntries = {
      {},
      2},
     {QStringLiteral("screen_recording_shortcuts/export"),
-     QJsonArray{QStringLiteral("Ctrl+E")},
+     QJsonArray{QStringLiteral("Ctrl+R")},
      ConfigurationValueKind::StringList,
      std::nullopt,
      {},
