@@ -6,7 +6,7 @@ on:
       test_scope:
         description: Native checks to run
         type: choice
-        options: [all, settings, catalog, history, recording]
+        options: [all, settings, catalog, history, recording, fork]
         default: all
       translations_only:
         description: Validate and compile translations without rebuilding native executables
@@ -226,10 +226,13 @@ jobs:
             catalog = @('snow-shot-settings-catalog-tests')
             history = @('snow-shot-screenshot-history-tests')
             recording = @('snow-shot-screen-recording-controller-tests')
+            fork = @('snow-shot-application-storage-tests', 'snow-shot-settings-catalog-tests', 'snow-shot-screenshot-history-tests', 'snow-shot-screenshot-toolbar-remembered-tool-tests', 'snow-shot-about-page-tests')
           }
           [string[]]$targets = $groups['${{ inputs.test_scope }}']
-          cmake --build --preset "build-$env:SNOW_PRESET" --parallel 4 --target @targets
-          if ($LASTEXITCODE -ne 0) { throw 'Behavior test build failed.' }
+          foreach ($target in $targets) {
+            cmake --build --preset "build-$env:SNOW_PRESET" --parallel 4 --target $target
+            if ($LASTEXITCODE -ne 0) { throw "Behavior test build failed: $target" }
+          }
 
       - name: Test changed behavior offscreen
         timeout-minutes: 5
@@ -237,19 +240,25 @@ jobs:
         shell: pwsh
         run: |
           $testDir = "build/$env:SNOW_PRESET/snow_shot/test-bin/Release"
-          if ('${{ inputs.test_scope }}' -in @('all', 'settings')) {
+          if ('${{ inputs.test_scope }}' -in @('all', 'settings', 'fork')) {
             & "$testDir/snow-shot-application-storage-tests.exe" --shortcut-settings-only
             if ($LASTEXITCODE -ne 0) { throw 'Shortcut and settings tests failed.' }
           }
-          if ('${{ inputs.test_scope }}' -in @('all', 'settings', 'catalog')) {
+          if ('${{ inputs.test_scope }}' -in @('all', 'settings', 'catalog', 'fork')) {
             & "$testDir/snow-shot-settings-catalog-tests.exe" -platform offscreen
             if ($LASTEXITCODE -ne 0) { throw 'Settings catalog tests failed.' }
           }
-          if ('${{ inputs.test_scope }}' -in @('all', 'history')) {
+          if ('${{ inputs.test_scope }}' -in @('all', 'history', 'fork')) {
             & "$testDir/snow-shot-screenshot-history-tests.exe" --completion-gestures-only -platform offscreen
             if ($LASTEXITCODE -ne 0) { throw 'Middle-click gesture tests failed.' }
             & "$testDir/snow-shot-screenshot-history-tests.exe" --recognition-history-only -platform offscreen
             if ($LASTEXITCODE -ne 0) { throw 'Recognition history tests failed.' }
+          }
+          if ('${{ inputs.test_scope }}' -eq 'fork') {
+            & "$testDir/snow-shot-screenshot-toolbar-remembered-tool-tests.exe" --toolbar-history-only -platform offscreen
+            if ($LASTEXITCODE -ne 0) { throw 'Toolbar command history tests failed.' }
+            & "$testDir/snow-shot-about-page-tests.exe" --fork-links-only -platform offscreen
+            if ($LASTEXITCODE -ne 0) { throw 'Fork About links and update defaults tests failed.' }
           }
           if ('${{ inputs.test_scope }}' -in @('all', 'recording')) {
             & "$testDir/snow-shot-screen-recording-controller-tests.exe" --auto-start-only -platform offscreen

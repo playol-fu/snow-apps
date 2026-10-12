@@ -88,7 +88,8 @@ void updateSettingsPersistAndValidate() {
 #endif
     {
         storage::ConfigurationStore store(path, true, true, 60000);
-        require(store.value(key) == defaultMode, "new configurations must default to manual updates");
+        require(store.value(key) == defaultMode,
+                "new configurations must default to manual updates");
         require(store.setValue(key, QStringLiteral("next_launch")) &&
                     store.value(key) == nextLaunchMode,
                 "next-launch update policy must normalize for the current platform");
@@ -365,8 +366,8 @@ void settingsSchemaDefaultsAndValidationAreComplete() {
         return storage::ConfigurationSchema::defaultValue(QString::fromLatin1(key));
     };
     require(storage::ConfigurationSchema::defaultValue(
-                QStringLiteral("screen_recording_shortcuts/export")).toArray() ==
-                QJsonArray{QStringLiteral("Ctrl+R")},
+                QStringLiteral("screen_recording_shortcuts/export"))
+                    .toArray() == QJsonArray{QStringLiteral("Ctrl+R")},
             "Export recording defaults to Ctrl+R");
     require(
         defaultValue("system/auto_start_at_boot").toBool() &&
