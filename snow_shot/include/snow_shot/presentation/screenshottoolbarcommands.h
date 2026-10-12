@@ -21,6 +21,7 @@ class ScreenshotToolbarCommandSink {
     virtual void replicateStyleEdit(const SnowCanvasStyleEdit&, SnowCanvasWidget*) {}
     virtual ~ScreenshotToolbarCommandSink() = default;
 
+    virtual void saveToolbarCommandHistory() {}
     virtual void undoCanvasEdit() {}
     virtual void redoCanvasEdit() {}
     virtual void setScreenshotRegionType(int) {}

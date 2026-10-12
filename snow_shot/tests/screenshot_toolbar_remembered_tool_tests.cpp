@@ -45,6 +45,7 @@ class RecordingToolbarCommands : public ScreenshotToolbarCommandSink {
         ++selectToolCount;
     }
     void setShapeTool() override {
+        historyCountWhenShapeSelected = historySaveCount;
         ++shapeToolCount;
     }
     void setArrowTool() override {}
@@ -83,6 +84,11 @@ class RecordingToolbarCommands : public ScreenshotToolbarCommandSink {
     void createTextForSelectedSerialNumber() override {}
     void repositionToolbarForContentChange() override {}
     void hideColorPickersForScreenshotUi() override {}
+    void saveToolbarCommandHistory() override {
+        ++historySaveCount;
+    }
+    int historySaveCount = 0;
+    int historyCountWhenShapeSelected = 0;
     void requestRecapture() override {
         ++recaptureCount;
     }
@@ -101,6 +107,39 @@ class RecordingToolbarCommands : public ScreenshotToolbarCommandSink {
     int brushEraserCount = 0;
     int recaptureCount = 0;
 };
+
+void toolbarCommandsSaveHistoryBeforeDispatch() {
+    RecordingToolbarCommands commands;
+    ScreenshotToolbarWindow window(commands);
+    auto* palette = window.palette();
+    require(palette != nullptr, "toolbar materializes its palette");
+    for (const auto signal :
+         {&ScreenshotToolPalette::qrRequested, &ScreenshotToolPalette::latexRequested,
+          &ScreenshotToolPalette::markdownRequested, &ScreenshotToolPalette::htmlRequested,
+          &ScreenshotToolPalette::printRequested, &ScreenshotToolPalette::cloudUploadRequested,
+          &ScreenshotToolPalette::screenRecordRequested, &ScreenshotToolPalette::shapeRequested}) {
+        const int before = commands.historySaveCount;
+        (palette->*signal)();
+        require(commands.historySaveCount == before + 1,
+                "each toolbar command saves exactly one snapshot");
+    }
+    const int before = commands.historySaveCount;
+    palette->copyRequested();
+    palette->saveRequested();
+    palette->pinRequested();
+    palette->ocrRequested();
+    require(commands.historySaveCount == before,
+            "completion and recognition commands retain their existing history paths");
+    const int beforeShape = commands.shapeToolCount;
+    bool savedFirst = false;
+    QObject::connect(palette, &ScreenshotToolPalette::shapeRequested, [&] {
+        savedFirst =
+            commands.historySaveCount == before + 1 && commands.shapeToolCount == beforeShape + 1;
+    });
+    palette->shapeRequested();
+    require(savedFirst && commands.historyCountWhenShapeSelected == before + 1,
+            "history hook runs before the command is forwarded");
+}
 
 void editSelectionToolbarFollowsSetting() {
     using Tool = ScreenshotToolPalette::Tool;
@@ -587,12 +626,18 @@ int main(int argc, char** argv) {
     static_cast<void>(
         applicationStorage.initialize({storageDirectory.filePath(QStringLiteral("bin")),
                                        storageDirectory.filePath(QStringLiteral("data")), 60000}));
+    if (application.arguments().contains(QStringLiteral("--toolbar-history-only"))) {
+        toolbarCommandsSaveHistoryBeforeDispatch();
+        applicationStorage.shutdown();
+        return 0;
+    }
     if (application.arguments().contains(QStringLiteral("--eraser-only"))) {
         eraserSubtoolsReachToolbarCommands();
         applicationStorage.shutdown();
         return 0;
     }
     if (application.arguments().contains(QStringLiteral("--edit-selection-toolbar-only"))) {
+        toolbarCommandsSaveHistoryBeforeDispatch();
         editSelectionToolbarFollowsSetting();
         moveOptionsCapabilityIsIndependentOfVisibility();
         applicationStorage.shutdown();
@@ -609,6 +654,7 @@ int main(int argc, char** argv) {
         return 0;
     }
     eraserSubtoolsReachToolbarCommands();
+    toolbarCommandsSaveHistoryBeforeDispatch();
     editSelectionToolbarFollowsSetting();
     moveOptionsCapabilityIsIndependentOfVisibility();
     rememberedDrawingToolRestoresOncePerCapture();

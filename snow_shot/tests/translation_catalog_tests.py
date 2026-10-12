@@ -267,8 +267,8 @@ class CaptureBehaviorTranslationTests(unittest.TestCase):
             "Confirm the highlighted region before running the middle mouse button action.",
             "Start recording immediately",
             "Start recording when entering recording mode, using the configured start delay.",
-            "Save recognition screenshots to history",
-            "Save the selected screenshot when opening text recognition, table recognition, or translation.",
+            "Save toolbar commands to history",
+            "Save the selected screenshot when using any command in the screenshot toolbar.",
             "Copy recording after stopping",
             "Copy the recorded file to the clipboard after it is successfully saved.",
         }

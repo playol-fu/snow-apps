@@ -131,6 +131,145 @@ void ScreenshotToolbarWindow::initializePalette() {
         return;
     }
 
+    // Save before commands mutate the selection or close the capture UI. Completion
+    // commands and the existing recognition paths publish their own history entries.
+    connect(toolPalette, &ScreenshotToolPalette::undoRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::redoRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::screenshotRegionTypeRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::addScreenshotRegionRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::subtractScreenshotRegionRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::recaptureRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::moveRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::selectRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::shapeRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::distanceToolRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::arrowRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::textRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::serialNumberRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::latexRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::markdownRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::htmlRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::imageConversionSettingsRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::qrRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::showOriginalImageRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::textEditRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::textTranslateRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::jumpToTranslationPageRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::textResetRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::textSettingsRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::textFormattingRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::textPunctuationRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::textTargetLanguageRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::tableMergeRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::tableSplitRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::tableResetRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::screenRecordRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::printRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::cloudUploadRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::cancelRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::canvasColorSamplingRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::sendSelectionToBackRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::sendSelectionBackwardRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::bringSelectionForwardRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::bringSelectionToFrontRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::alignSelectionLeftRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::alignSelectionCenterHorizontallyRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::alignSelectionRightRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::alignSelectionTopRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::alignSelectionCenterVerticallyRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::alignSelectionBottomRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::distributeSelectionHorizontallyRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::distributeSelectionVerticallyRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::duplicateSelectionRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::deleteSelectionRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::resetCanvasRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::lineRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::freeDrawRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::highlightRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::penHighlightRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::rectangleEraserRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::brushEraserRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::eraserRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::filterRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::spotlightRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::rectangleFilterRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::autoFilterRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::autoFilterCategoryRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::penFilterRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::watermarkRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::serialNumberDecrementRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::serialNumberIncrementRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::serialNumberCreateTextRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+    connect(toolPalette, &ScreenshotToolPalette::scrollingScreenshotRequested, this,
+            [this]() { m_commands.saveToolbarCommandHistory(); });
+
     toolPalette->setDrawTemplateCallbacks(
         [this]() { return m_commands.selectedDrawTemplatePayload(); },
         [this](const QByteArray& payload) { m_commands.insertDrawTemplate(payload); });

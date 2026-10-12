@@ -3325,10 +3325,6 @@
             <translation>Save recognition result as image</translation>
         </message>
         <message>
-            <source>Save recognition screenshots to history</source>
-            <translation>Save recognition screenshots to history</translation>
-        </message>
-        <message>
             <source>Save speaker and microphone audio as separate MP4 tracks for independent editing. Most players play one track at a time.</source>
             <translation>Save speaker and microphone audio as separate MP4 tracks for independent editing. Most players play one track at a time.</translation>
         </message>
@@ -3341,8 +3337,12 @@
             <translation>Save the confirmed screenshot selection to the configured folder</translation>
         </message>
         <message>
-            <source>Save the selected screenshot when opening text recognition, table recognition, or translation.</source>
-            <translation>Save the selected screenshot when opening text recognition, table recognition, or translation.</translation>
+            <source>Save the selected screenshot when using any command in the screenshot toolbar.</source>
+            <translation>Save the selected screenshot when using any command in the screenshot toolbar.</translation>
+        </message>
+        <message>
+            <source>Save toolbar commands to history</source>
+            <translation>Save toolbar commands to history</translation>
         </message>
         <message>
             <source>Saved screenshots</source>

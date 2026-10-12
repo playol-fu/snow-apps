@@ -2900,11 +2900,10 @@ QVector<SettingsPageDefinition> builtInPages() {
                      screenshotMiddleClickActionItem(),
                      switchItem(
                          QStringLiteral("screenshot.save-history-on-recognition"),
+                         QT_TRANSLATE_NOOP("SettingsCatalog", "Save toolbar commands to history"),
                          QT_TRANSLATE_NOOP("SettingsCatalog",
-                                           "Save recognition screenshots to history"),
-                         QT_TRANSLATE_NOOP("SettingsCatalog",
-                                           "Save the selected screenshot when opening text "
-                                           "recognition, table recognition, or translation."),
+                                           "Save the selected screenshot when using any "
+                                           "command in the screenshot toolbar."),
                          QStringLiteral("screenshot/save_history_on_recognition"),
                          SettingsSwitchBinding::ScreenshotSaveHistoryOnRecognition),
                      switchItem(

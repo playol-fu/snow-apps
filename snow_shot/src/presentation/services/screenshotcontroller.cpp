@@ -419,6 +419,7 @@ struct ScreenshotController::Impl final : public ScreenshotToolbarCommandSink,
     void setFilterStyleFromToolbar(const SnowCanvasFilterStyle& style, quint32 properties) override;
     void setTextTool() override;
     void setSerialNumberTool() override;
+    void saveToolbarCommandHistory() override;
     void setOcrTool() override;
     void setTextTranslationTool() override;
     void setTableTool() override;
@@ -2638,6 +2639,12 @@ void ScreenshotController::Impl::setSerialNumberTool() {
     const bool scrollingCaptureStopped = stopScrollingCapture(true);
     m_toolCommandWorkflow->setSerialNumberTool();
     restoreToolUiAfterScrollingCapture(scrollingCaptureStopped);
+}
+
+void ScreenshotController::Impl::saveToolbarCommandHistory() {
+    if (m_historyService != nullptr && m_exportService != nullptr) {
+        m_historyService->saveRecognitionSnapshot(*m_exportService);
+    }
 }
 
 void ScreenshotController::Impl::setOcrTool() {
