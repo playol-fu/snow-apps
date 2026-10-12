@@ -284,13 +284,13 @@ const QVector<ConfigurationSchemaEntry> kRawEntries = {
     {QStringLiteral("mcp/enabled"), false, ConfigurationValueKind::Boolean},
 #ifdef Q_OS_MACOS
     {QStringLiteral("updates/mode"),
-     QStringLiteral("check"),
+     QStringLiteral("manual"),
      ConfigurationValueKind::String,
      std::nullopt,
      {QStringLiteral("manual"), QStringLiteral("check")}},
 #else
     {QStringLiteral("updates/mode"),
-     QStringLiteral("download"),
+     QStringLiteral("manual"),
      ConfigurationValueKind::String,
      std::nullopt,
      {QStringLiteral("manual"), QStringLiteral("check"), QStringLiteral("download"),

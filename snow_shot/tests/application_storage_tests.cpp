@@ -80,15 +80,15 @@ void updateSettingsPersistAndValidate() {
     const QString path = temporary.filePath(QStringLiteral("config.json"));
     const QString key = QStringLiteral("updates/mode");
 #ifdef Q_OS_MACOS
-    const QString defaultMode = QStringLiteral("check");
+    const QString defaultMode = QStringLiteral("manual");
     const QString nextLaunchMode = QStringLiteral("check");
 #else
-    const QString defaultMode = QStringLiteral("download");
+    const QString defaultMode = QStringLiteral("manual");
     const QString nextLaunchMode = QStringLiteral("next_launch");
 #endif
     {
         storage::ConfigurationStore store(path, true, true, 60000);
-        require(store.value(key) == defaultMode, "existing update default must be preserved");
+        require(store.value(key) == defaultMode, "new configurations must default to manual updates");
         require(store.setValue(key, QStringLiteral("next_launch")) &&
                     store.value(key) == nextLaunchMode,
                 "next-launch update policy must normalize for the current platform");
@@ -2994,6 +2994,7 @@ int main(int argc, char** argv) {
     QCoreApplication::setApplicationName(QStringLiteral("storage-tests"));
     if (application.arguments().contains(QStringLiteral("--shortcut-settings-only"))) {
         pinnedManagementConfigurationAndTrayMigration();
+        updateSettingsPersistAndValidate();
         settingsSchemaDefaultsAndValidationAreComplete();
         settingsAdaptersRoundTripAndRejectInvalidValues();
         storage::ApplicationStorage::instance().shutdown();
