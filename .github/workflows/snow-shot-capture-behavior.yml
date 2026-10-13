@@ -226,7 +226,7 @@ jobs:
             catalog = @('snow-shot-settings-catalog-tests')
             history = @('snow-shot-screenshot-history-tests')
             recording = @('snow-shot-screen-recording-controller-tests')
-            serial = @('snow-shot-application-storage-tests', 'snow-shot-screenshot-tool-palette-tests')
+            serial = @('snow-shot-application-storage-tests', 'snow-shot-screenshot-tool-palette-tests', 'snow-canvas-text-draft-tests')
             fork = @('snow-shot-application-storage-tests', 'snow-shot-settings-catalog-tests', 'snow-shot-screenshot-history-tests', 'snow-shot-screenshot-toolbar-remembered-tool-tests', 'snow-shot-about-page-tests')
           }
           [string[]]$targets = $groups['${{ inputs.test_scope }}']
@@ -243,6 +243,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Serial number geometry tests failed.' }
           cargo test --manifest-path snow_draw_engine_qt/Cargo.toml -p snow-draw-engine-editor serial_number --target-dir build/serial-number-rust-tests
           if ($LASTEXITCODE -ne 0) { throw 'Serial number style tests failed.' }
+          cargo test --manifest-path snow_draw_engine_qt/Cargo.toml -p snow-draw-engine serial_number --target-dir build/serial-number-rust-tests
+          if ($LASTEXITCODE -ne 0) { throw 'Serial number session tests failed.' }
+          cargo test --manifest-path snow_draw_engine_qt/Cargo.toml -p snow-draw-engine-c serial_number --target-dir build/serial-number-rust-tests
+          if ($LASTEXITCODE -ne 0) { throw 'Serial number ABI tests failed.' }
 
       - name: Test changed behavior offscreen
         timeout-minutes: 5
@@ -250,7 +254,7 @@ jobs:
         shell: pwsh
         run: |
           $testDir = "build/$env:SNOW_PRESET/snow_shot/test-bin/Release"
-          if ('${{ inputs.test_scope }}' -in @('all', 'settings', 'fork', 'serial')) {
+          if ('${{ inputs.test_scope }}' -in @('all', 'settings', 'fork')) {
             & "$testDir/snow-shot-application-storage-tests.exe" --shortcut-settings-only
             if ($LASTEXITCODE -ne 0) { throw 'Shortcut and settings tests failed.' }
           }
@@ -265,8 +269,12 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Recognition history tests failed.' }
           }
           if ('${{ inputs.test_scope }}' -eq 'serial') {
+            & "$testDir/snow-shot-application-storage-tests.exe" --toolbar-layout-only
+            if ($LASTEXITCODE -ne 0) { throw 'Toolbar layout migration tests failed.' }
             & "$testDir/snow-shot-screenshot-tool-palette-tests.exe" --serial-number-ui-only -platform offscreen
             if ($LASTEXITCODE -ne 0) { throw 'Serial number slider, formats, and barcode defaults tests failed.' }
+            ctest --test-dir "build/$env:SNOW_PRESET" -C Release -R '^snow-canvas-serial-number-render-tests$' --output-on-failure
+            if ($LASTEXITCODE -ne 0) { throw 'Serial number rendering and cursor tests failed.' }
           }
           if ('${{ inputs.test_scope }}' -eq 'fork') {
             & "$testDir/snow-shot-screenshot-toolbar-remembered-tool-tests.exe" --toolbar-history-only -platform offscreen
