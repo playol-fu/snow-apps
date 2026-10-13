@@ -119,6 +119,12 @@ jobs:
             snow_rust_ffi -> ../build/${{ matrix.preset }}/cargo
           cache-on-failure: true
 
+      - name: Check drawing engine Rust API before building the app
+        shell: pwsh
+        run: |
+          cargo check --manifest-path snow_draw_engine_qt/Cargo.toml -p snow-draw-engine-c --locked --target ${{ matrix.rust-target }} --target-dir "build/$env:SNOW_PRESET/cargo"
+          if ($LASTEXITCODE -ne 0) { throw 'Drawing engine Rust API does not compile.' }
+
       - name: Install static project dependencies
         id: dependency-setup
         shell: pwsh
