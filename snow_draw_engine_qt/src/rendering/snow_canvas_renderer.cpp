@@ -1872,6 +1872,7 @@ QImage serialNumberPreview(const SnowSerialNumberStyle& style, double zoom,
     image.setDevicePixelRatio(dpr);
     image.fill(Qt::transparent);
     SnowSceneDisplayItem item{};
+    item.kind = SNOW_SCENE_DISPLAY_ITEM_SERIAL_NUMBER;
     item.width = diameter;
     item.height = diameter;
     item.serial_number_type = static_cast<std::uint8_t>(style.serial_number_type);
@@ -1896,6 +1897,7 @@ QImage serialNumberPreview(const SnowSerialNumberStyle& style, double zoom,
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing);
     drawSerialNumberItem(painter, info, item);
+    painter.end();
     return image;
 }
 
