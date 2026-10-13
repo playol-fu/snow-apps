@@ -160,18 +160,19 @@ void inputMethodPreeditDoesNotCommitUntilCommitString() {
     draft.begin(QStringLiteral("ab"));
     draft.setCursorPosition(1);
 
-    QInputMethodEvent preedit(QStringLiteral("中"), {});
+    QInputMethodEvent preedit(QStringLiteral("ä¸­"), {});
     require(draft.handleInputMethodEvent(preedit), "preedit should change display text");
     require(draft.text() == QStringLiteral("ab"), "preedit should not mutate committed text");
-    require(draft.displayText() == QStringLiteral("a中b"), "preedit should appear in display text");
+    require(draft.displayText() == QStringLiteral("aä¸­b"),
+            "preedit should appear in display text");
     require(draft.hasPreedit(), "preedit state should be active");
     require(draft.inputMethodCursorPosition() == 1,
             "IME cursor should report committed-text anchor");
 
     QInputMethodEvent commit;
-    commit.setCommitString(QStringLiteral("中"));
+    commit.setCommitString(QStringLiteral("ä¸­"));
     require(draft.handleInputMethodEvent(commit), "commit should change committed text");
-    require(draft.text() == QStringLiteral("a中b"), "commit should replace preedit range");
+    require(draft.text() == QStringLiteral("aä¸­b"), "commit should replace preedit range");
     require(!draft.hasPreedit(), "commit should clear preedit state");
     require(draft.cursorPosition() == 2, "commit should move cursor after committed text");
 }
@@ -2305,6 +2306,74 @@ QRect visiblePixelBounds(const QImage& image) {
     return bounds;
 }
 
+void outlinedSolidSerialNumbersHaveFixedBordersAndPreserveBounds() {
+    const SnowColorRgba8 red{255, 0, 0, 255};
+    const SnowColorRgba8 transparent{0, 0, 0, 0};
+    const auto solid = renderedSerialNumberType(SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE, red,
+                                                transparent, SNOW_FILL_STYLE_SOLID, 6.0);
+    for (auto type : {SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE_WHITE_OUTLINE,
+                      SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE_BLACK_OUTLINE}) {
+        const auto image =
+            renderedSerialNumberType(type, red, transparent, SNOW_FILL_STYLE_SOLID, 6.0);
+        const QColor border = type == SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE_WHITE_OUTLINE
+                                  ? QColor(Qt::white)
+                                  : QColor(Qt::black);
+        require(image.pixelColor(70, 70) == QColor(Qt::red),
+                "outlined badge keeps its chosen solid color");
+        require(image.pixelColor(70, 30) == border,
+                "outlined badge paints the requested fixed border");
+        require(visiblePixelBounds(image) == visiblePixelBounds(solid),
+                "border remains inside existing paint bounds");
+    }
+}
+
+void serialNumberCursorTracksBadgeStyleNumberAndDpi() {
+    SnowCanvasWidget canvas;
+    canvas.resize(320, 240);
+    canvas.show();
+    SnowCanvasSerialNumberStyle style;
+    style.number = 12;
+    style.fontSize = 24;
+    style.color = Qt::red;
+    style.type = SnowCanvasSerialNumberType::SolidCircleWhiteOutline;
+    require(canvas.setCanvasTool(SnowCanvasTool::SerialNumber) &&
+                canvas.setCanvasSerialNumberStyle(style),
+            "serial tool and creation style activate");
+    require(canvas.cursor().shape() == Qt::BitmapCursor && !canvas.cursor().pixmap().isNull(),
+            "serial tool shows a rendered badge cursor");
+    const QImage first = canvas.cursor().pixmap().toImage();
+    style.number = 13;
+    require(canvas.setCanvasSerialNumberStyle(style), "next badge number changes");
+    require(canvas.cursor().pixmap().toImage() != first,
+            "cursor label follows the current sequence number");
+    const QImage second = canvas.cursor().pixmap().toImage();
+    style.type = SnowCanvasSerialNumberType::SolidCircleBlackOutline;
+    require(canvas.setCanvasSerialNumberStyle(style), "badge border changes");
+    require(canvas.cursor().pixmap().toImage() != second, "cursor follows the badge border style");
+    const auto engineStyle = snow_canvas_types::toEngineSerialNumberStyle(style);
+    const auto normal = snow_canvas_renderer::serialNumberPreview(engineStyle, 1.0, 1.0);
+    const auto scaled = snow_canvas_renderer::serialNumberPreview(engineStyle, 1.0, 2.0);
+    require(scaled.devicePixelRatio() == 2.0 && scaled.size() == normal.size() * 2,
+            "badge cursor renders at screen pixel density");
+    const auto originalSize = canvas.cursor().pixmap().size();
+    style.fontSize = 40;
+    require(canvas.setCanvasSerialNumberStyle(style) &&
+                canvas.cursor().pixmap().width() > originalSize.width(),
+            "cursor size follows the selected font size");
+    const auto beforePlacement = canvas.cursor().pixmap().toImage();
+    sendCanvasMouseEvent(canvas, QEvent::MouseButtonPress, QPointF(160, 120), Qt::LeftButton,
+                         Qt::LeftButton);
+    sendCanvasMouseEvent(canvas, QEvent::MouseButtonRelease, QPointF(160, 120), Qt::LeftButton,
+                         Qt::NoButton);
+    require(canvas.cursor().shape() == Qt::BitmapCursor &&
+                canvas.cursor().pixmap().toImage() != beforePlacement,
+            "placing a badge updates the cursor to the next number even while the last badge is "
+            "selected");
+    require(canvas.setCanvasTool(SnowCanvasTool::Shape) &&
+                canvas.cursor().shape() != Qt::BitmapCursor,
+            "leaving Serial number restores the other tool cursor");
+}
+
 void circleRendersFillAndStrokeWithoutNumber() {
     const SnowColorRgba8 red{255, 0, 0, 255};
     const SnowColorRgba8 green{0, 255, 0, 255};
@@ -2545,7 +2614,7 @@ void textEditorConnectorBuildsSerialBoundConnector() {
 }
 
 // Canvas-space text paint bounds, straight from the engine's published paint
-// contract — the same bounds dirty regions derive from. Production code
+// contract â€” the same bounds dirty regions derive from. Production code
 // currently has no canvas-space caller, so the helper lives with its only
 // consumer.
 QRectF textItemCanvasBounds(const SnowSceneDisplayItem& item) {
@@ -4571,6 +4640,8 @@ int main(int argc, char** argv) {
         serialNumberFormattedLabelsRenderAndFitBadges();
         serialNumberBackgroundUsesTextHatchTexture();
         circleRendersFillAndStrokeWithoutNumber();
+        outlinedSolidSerialNumbersHaveFixedBordersAndPreserveBounds();
+        serialNumberCursorTracksBadgeStyleNumberAndDpi();
         serialNumberTypesRenderExpectedSilhouettesAndSolidSemantics();
         solidSerialNumberChoosesFixedContrastLabelColors();
         textEditorConnectorBuildsSerialBoundConnector();
@@ -4634,6 +4705,8 @@ int main(int argc, char** argv) {
     textBackgroundUsesRectangleHatchTexture();
     serialNumberBackgroundUsesTextHatchTexture();
     circleRendersFillAndStrokeWithoutNumber();
+    outlinedSolidSerialNumbersHaveFixedBordersAndPreserveBounds();
+    serialNumberCursorTracksBadgeStyleNumberAndDpi();
     serialNumberTypesRenderExpectedSilhouettesAndSolidSemantics();
     solidSerialNumberChoosesFixedContrastLabelColors();
     textHoverUnderlineRendererDrawsOnlyTheUnderline();

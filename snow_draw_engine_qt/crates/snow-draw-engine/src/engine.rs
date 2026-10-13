@@ -292,6 +292,14 @@ impl Engine {
         })
     }
 
+    pub fn viewport_serial_number_creation_style(
+        &self,
+        id: ViewportId,
+    ) -> Result<snow_draw_engine_editor::SerialNumberStyle, ErrorCode> {
+        self.ensure_viewport(id)?;
+        Ok(self.editor.serial_number_creation_style())
+    }
+
     pub fn viewport_serial_number_toolbar_state(
         &self,
         id: ViewportId,

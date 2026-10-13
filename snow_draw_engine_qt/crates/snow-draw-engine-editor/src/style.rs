@@ -1574,6 +1574,10 @@ impl Editor {
         })
     }
 
+    pub fn serial_number_creation_style(&self) -> SerialNumberStyle {
+        SerialNumberStyle::from_serial_number(&self.state.default_serial_number)
+    }
+
     pub fn serial_number_style(&self, document: &DocumentModel) -> SerialNumberStyle {
         self.state
             .selection

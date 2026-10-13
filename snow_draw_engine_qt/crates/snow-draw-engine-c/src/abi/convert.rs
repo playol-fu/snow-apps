@@ -323,6 +323,12 @@ fn snow_arrowhead_primitive_kind_from_rust(
         ArrowheadDisplayPrimitiveKind::Line => SnowArrowheadPrimitiveKind::Line,
         ArrowheadDisplayPrimitiveKind::Polygon => SnowArrowheadPrimitiveKind::Polygon,
         ArrowheadDisplayPrimitiveKind::Circle => SnowArrowheadPrimitiveKind::Circle,
+        ArrowheadDisplayPrimitiveKind::SolidCircleWhiteOutline => {
+            SnowArrowheadPrimitiveKind::SolidCircleWhiteOutline
+        }
+        ArrowheadDisplayPrimitiveKind::SolidCircleBlackOutline => {
+            SnowArrowheadPrimitiveKind::SolidCircleBlackOutline
+        }
     }
 }
 
@@ -868,6 +874,8 @@ pub(crate) fn snow_serial_number_type_to_rust(value: SnowSerialNumberType) -> Se
         SnowSerialNumberType::OutlinedSquare => SerialNumberType::OutlinedSquare,
         SnowSerialNumberType::SolidSquare => SerialNumberType::SolidSquare,
         SnowSerialNumberType::Circle => SerialNumberType::Circle,
+        SnowSerialNumberType::SolidCircleWhiteOutline => SerialNumberType::SolidCircleWhiteOutline,
+        SnowSerialNumberType::SolidCircleBlackOutline => SerialNumberType::SolidCircleBlackOutline,
     }
 }
 
@@ -900,6 +908,12 @@ impl From<SerialNumberStyle> for SnowSerialNumberStyle {
                 SerialNumberType::OutlinedSquare => SnowSerialNumberType::OutlinedSquare,
                 SerialNumberType::SolidSquare => SnowSerialNumberType::SolidSquare,
                 SerialNumberType::Circle => SnowSerialNumberType::Circle,
+                SerialNumberType::SolidCircleWhiteOutline => {
+                    SnowSerialNumberType::SolidCircleWhiteOutline
+                }
+                SerialNumberType::SolidCircleBlackOutline => {
+                    SnowSerialNumberType::SolidCircleBlackOutline
+                }
             },
             color: value.color.into(),
             fill: value.fill.into(),
@@ -1099,6 +1113,12 @@ pub(crate) fn runtime_config_from_c(
                         SnowSerialNumberType::OutlinedSquare => SerialNumberType::OutlinedSquare,
                         SnowSerialNumberType::SolidSquare => SerialNumberType::SolidSquare,
                         SnowSerialNumberType::Circle => SerialNumberType::Circle,
+                        SnowSerialNumberType::SolidCircleWhiteOutline => {
+                            SerialNumberType::SolidCircleWhiteOutline
+                        }
+                        SnowSerialNumberType::SolidCircleBlackOutline => {
+                            SerialNumberType::SolidCircleBlackOutline
+                        }
                     },
                     color: defaults.serial_number.color.into(),
                     fill: defaults.serial_number.fill.into(),

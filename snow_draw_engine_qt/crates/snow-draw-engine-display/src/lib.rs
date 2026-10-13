@@ -448,6 +448,8 @@ pub enum DisplaySerialNumberType {
     OutlinedSquare = 2,
     SolidSquare = 3,
     Circle = 4,
+    SolidCircleWhiteOutline = 5,
+    SolidCircleBlackOutline = 6,
 }
 
 #[derive(Clone, Debug, PartialEq)]

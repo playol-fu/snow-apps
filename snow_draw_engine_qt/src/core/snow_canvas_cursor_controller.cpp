@@ -2,6 +2,9 @@
 
 #include <QWidget>
 #include "snow_canvas_input_adapter.h"
+#include "snow_canvas_renderer.h"
+#include "snow_canvas_state.h"
+#include <QPixmap>
 
 #include <algorithm>
 #include <cmath>
@@ -65,8 +68,19 @@ void SnowCanvasCursorController::setEngineCursor(SnowCursorStyle style) {
         m_cursorDevicePixelRatio = dpr;
         m_strokeCursor.reset();
         m_eraserCursor.reset();
+        m_serialNumberCursor.reset();
     }
-    if (style == SNOW_CURSOR_STYLE_STROKE || style == SNOW_CURSOR_STYLE_ERASER) {
+    if (style == SNOW_CURSOR_STYLE_CROSSHAIR && m_serialNumberStyle) {
+        if (!m_serialNumberCursor) {
+            const QImage preview = snow_canvas_renderer::serialNumberPreview(
+                *m_serialNumberStyle, m_serialNumberZoom, dpr);
+            if (!preview.isNull()) {
+                const int center = qRound(preview.width() / preview.devicePixelRatio() / 2.0);
+                m_serialNumberCursor = QCursor(QPixmap::fromImage(preview), center, center);
+            }
+        }
+        m_canvasToolCursor = m_serialNumberCursor.value_or(QCursor(Qt::CrossCursor));
+    } else if (style == SNOW_CURSOR_STYLE_STROKE || style == SNOW_CURSOR_STYLE_ERASER) {
         auto& cached = style == SNOW_CURSOR_STYLE_STROKE ? m_strokeCursor : m_eraserCursor;
         if (!cached) {
             cached = snow_canvas_input::strokeCursor(
@@ -93,6 +107,19 @@ void SnowCanvasCursorController::configureStrokeCursor(double diameter,
     m_strokeDiameter = diameter;
     m_strokeColor = color;
     m_strokeCursor.reset();
+    refreshDevicePixelRatio();
+}
+
+void SnowCanvasCursorController::configureSerialNumberCursor(
+    const std::optional<SnowSerialNumberStyle>& style, double zoom) {
+    if (style.has_value() == m_serialNumberStyle.has_value() &&
+        (!style || snow_canvas_state::serialNumberStylesEqual(*style, *m_serialNumberStyle)) &&
+        zoom == m_serialNumberZoom && m_cursorDevicePixelRatio == m_widget.devicePixelRatioF()) {
+        return;
+    }
+    m_serialNumberStyle = style;
+    m_serialNumberZoom = zoom;
+    m_serialNumberCursor.reset();
     refreshDevicePixelRatio();
 }
 

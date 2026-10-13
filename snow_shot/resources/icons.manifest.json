@@ -1135,6 +1135,22 @@
     },
     {
       "variant": "outlined",
+      "symbol": "SequenceNumberSolidCircleBlackOutline",
+      "name": "sequence-number-solid-circle-black-outline",
+      "source": "../src/presentation/components/icons/resources/sequence-number-solid-circle-black-outline.svg",
+      "colorModel": "monochrome",
+      "fit": "contain"
+    },
+    {
+      "variant": "outlined",
+      "symbol": "SequenceNumberSolidCircleWhiteOutline",
+      "name": "sequence-number-solid-circle-white-outline",
+      "source": "../src/presentation/components/icons/resources/sequence-number-solid-circle-white-outline.svg",
+      "colorModel": "monochrome",
+      "fit": "contain"
+    },
+    {
+      "variant": "outlined",
       "symbol": "SequenceNumberSolidSquare",
       "name": "sequence-number-solid-square",
       "source": "../src/presentation/components/icons/resources/sequence-number-solid-square.svg",

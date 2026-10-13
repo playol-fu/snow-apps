@@ -130,6 +130,7 @@ struct SceneRenderRequest {
 };
 
 QColor toQColor(const SnowColorRgba8& color);
+QImage serialNumberPreview(const SnowSerialNumberStyle& style, double zoom, qreal devicePixelRatio);
 std::size_t hatchTextureCacheEntryCountForCurrentThread();
 FilterRenderDiagnostics filterRenderDiagnosticsForCurrentThread();
 void resetFilterRenderDiagnosticsForCurrentThread();

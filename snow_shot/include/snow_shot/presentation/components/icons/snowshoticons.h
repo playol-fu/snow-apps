@@ -200,6 +200,10 @@ SequenceNumberOutlinedSquare(const adqt::icons::IconColors& colors = {});
 [[nodiscard]] adqt::icons::IconRef
 SequenceNumberSolidCircle(const adqt::icons::IconColors& colors = {});
 [[nodiscard]] adqt::icons::IconRef
+SequenceNumberSolidCircleBlackOutline(const adqt::icons::IconColors& colors = {});
+[[nodiscard]] adqt::icons::IconRef
+SequenceNumberSolidCircleWhiteOutline(const adqt::icons::IconColors& colors = {});
+[[nodiscard]] adqt::icons::IconRef
 SequenceNumberSolidSquare(const adqt::icons::IconColors& colors = {});
 [[nodiscard]] adqt::icons::IconRef ShapeDiamond(const adqt::icons::IconColors& colors = {});
 [[nodiscard]] adqt::icons::IconRef ShapeEllipse(const adqt::icons::IconColors& colors = {});

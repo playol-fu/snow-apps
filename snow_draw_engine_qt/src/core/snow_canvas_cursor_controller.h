@@ -18,6 +18,8 @@ class SnowCanvasCursorController final {
     void clearCursor(SnowCanvasCursorLayer layer);
     void setEngineCursor(SnowCursorStyle style);
     void configureStrokeCursor(double diameter, const std::optional<QColor>& color);
+    void configureSerialNumberCursor(const std::optional<SnowSerialNumberStyle>& style,
+                                     double zoom);
     void refreshDevicePixelRatio();
 
   private:
@@ -32,6 +34,9 @@ class SnowCanvasCursorController final {
     qreal m_cursorDevicePixelRatio = 0.0;
     std::optional<QCursor> m_strokeCursor;
     std::optional<QCursor> m_eraserCursor;
+    std::optional<SnowSerialNumberStyle> m_serialNumberStyle;
+    double m_serialNumberZoom = 1.0;
+    std::optional<QCursor> m_serialNumberCursor;
     std::optional<QCursor> m_canvasToolCursor;
     std::optional<QCursor> m_hostCursor;
 };

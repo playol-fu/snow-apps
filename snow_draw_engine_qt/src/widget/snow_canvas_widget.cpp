@@ -2315,6 +2315,17 @@ void SnowCanvasWidget::Impl::emitChangedStateSignals(const snow_canvas_state::Ch
 
 void SnowCanvasWidget::Impl::refreshToolCursorStyle() {
     const auto& cursorStyle = displayState.snapshot().styleToolbarState;
+    const bool serialNumber = displayState.snapshot().activeTool == SNOW_ACTIVE_TOOL_SERIAL_NUMBER;
+    std::optional<SnowSerialNumberStyle> creationStyle;
+    if (serialNumber) {
+        SnowSerialNumberStyle style{};
+        if (snow_viewport_get_serial_number_creation_style(
+                runtimeBinding.engine(), runtimeBinding.viewportHandle(), &style) == SNOW_OK) {
+            creationStyle = style;
+        }
+    }
+    cursorController.configureSerialNumberCursor(
+        creationStyle, displayState.displayCache().sceneInfo().camera_zoom);
     const bool filterCursor = displayState.snapshot().activeTool == SNOW_ACTIVE_TOOL_PEN_FILTER;
     const bool eraserCursor = displayState.snapshot().activeTool == SNOW_ACTIVE_TOOL_BRUSH_ERASER;
     const auto& stroke = cursorStyle.shape_style.stroke;

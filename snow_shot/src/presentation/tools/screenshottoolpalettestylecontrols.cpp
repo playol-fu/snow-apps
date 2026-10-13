@@ -67,7 +67,6 @@ namespace custom_outlined_icons = snow_shot::presentation::icons::custom::outlin
 namespace style_presets = snow_shot::presentation::style_presets;
 constexpr int kCornerRadiusLeadingSpacing = 4;
 constexpr int kTextStrokeColorTrailingSpacing = 4;
-constexpr int kSerialNumberTrailingSpacing = 4;
 constexpr int kSerialNumberInputWidth = 64;
 constexpr int kWatermarkTextWidth = 135;
 constexpr int kWatermarkTemplateActionWidth = 32;
@@ -2626,6 +2625,14 @@ QWidget* ScreenshotToolPaletteStyleControls::buildSerialNumberFamily(
          ScreenshotToolPaletteTranslationText(
              QT_TRANSLATE_NOOP("ScreenshotToolPalette", "Solid circle")),
          custom_outlined_icons::SequenceNumberSolidCircle()},
+        {static_cast<int>(SnowCanvasSerialNumberType::SolidCircleWhiteOutline),
+         ScreenshotToolPaletteTranslationText(
+             QT_TRANSLATE_NOOP("ScreenshotToolPalette", "Solid circle with white outline")),
+         custom_outlined_icons::SequenceNumberSolidCircleWhiteOutline()},
+        {static_cast<int>(SnowCanvasSerialNumberType::SolidCircleBlackOutline),
+         ScreenshotToolPaletteTranslationText(
+             QT_TRANSLATE_NOOP("ScreenshotToolPalette", "Solid circle with black outline")),
+         custom_outlined_icons::SequenceNumberSolidCircleBlackOutline()},
         {static_cast<int>(SnowCanvasSerialNumberType::OutlinedSquare),
          ScreenshotToolPaletteTranslationText(
              QT_TRANSLATE_NOOP("ScreenshotToolPalette", "Outlined square")),
@@ -2659,14 +2666,14 @@ QWidget* ScreenshotToolPaletteStyleControls::buildSerialNumberFamily(
     configureScreenshotToolPaletteTooltip(m_serialNumberTypeControlsContainer,
                                           ScreenshotToolPaletteTranslationText(QT_TRANSLATE_NOOP(
                                               "ScreenshotToolPalette", "Sequence number type")));
-    QObject::connect(m_serialNumberTypeButtonGroup,
-                     &adqt::widgets::AdRadioButtonGroup::checkedIdChanged, controls,
-                     [this](int id) {
-                         if (id >= static_cast<int>(SnowCanvasSerialNumberType::OutlinedCircle) &&
-                             id <= static_cast<int>(SnowCanvasSerialNumberType::Circle)) {
-                             setSerialNumberType(static_cast<SnowCanvasSerialNumberType>(id));
-                         }
-                     });
+    QObject::connect(
+        m_serialNumberTypeButtonGroup, &adqt::widgets::AdRadioButtonGroup::checkedIdChanged,
+        controls, [this](int id) {
+            if (id >= static_cast<int>(SnowCanvasSerialNumberType::OutlinedCircle) &&
+                id <= static_cast<int>(SnowCanvasSerialNumberType::SolidCircleBlackOutline)) {
+                setSerialNumberType(static_cast<SnowCanvasSerialNumberType>(id));
+            }
+        });
 
     if (host.addGroupSeparator) {
         host.addGroupSeparator(layout);
@@ -2772,7 +2779,6 @@ QWidget* ScreenshotToolPaletteStyleControls::buildSerialNumberFamily(
     m_serialNumberEditor->setProperty("screenshotStyleEditorRoot", true);
     m_serialNumberEditor->setProperty("screenshotStyleEditorRole", kRoleSerialValue);
     m_serialNumberEditor->setProperty("screenshotStyleEditorSignature", kSignatureSerialValue);
-    addToolbarSpacing(layout, kSerialNumberTrailingSpacing, metrics);
 
     ScreenshotToolPaletteFontEditorConfig serialNumberFontConfig;
     serialNumberFontConfig.accessibleName = QStringLiteral("Sequence number font family");
@@ -3799,6 +3805,10 @@ void ScreenshotToolPaletteStyleControls::registerSerialNumberEntries() {
                  m_serialNumberFillEditor->rootWidget() != nullptr) {
                  const bool solid =
                      m_state.m_serialNumberStyle.type == SnowCanvasSerialNumberType::SolidCircle ||
+                     m_state.m_serialNumberStyle.type ==
+                         SnowCanvasSerialNumberType::SolidCircleWhiteOutline ||
+                     m_state.m_serialNumberStyle.type ==
+                         SnowCanvasSerialNumberType::SolidCircleBlackOutline ||
                      m_state.m_serialNumberStyle.type == SnowCanvasSerialNumberType::SolidSquare;
                  m_serialNumberFillEditor->rootWidget()->setEnabled(typeMixed || !solid);
              }

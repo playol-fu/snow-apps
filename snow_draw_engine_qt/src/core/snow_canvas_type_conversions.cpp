@@ -762,7 +762,7 @@ bool toEngineStyleDefaults(const SnowCanvasStyleDefaults& defaults,
         !enumInRange(defaults.serialNumber.strokeStyle, SnowCanvasStrokeStyle::Solid,
                      SnowCanvasStrokeStyle::Dotted) ||
         !enumInRange(defaults.serialNumber.type, SnowCanvasSerialNumberType::OutlinedCircle,
-                     SnowCanvasSerialNumberType::Circle)) {
+                     SnowCanvasSerialNumberType::SolidCircleBlackOutline)) {
         return false;
     }
 

@@ -13,6 +13,72 @@ use crate::abi::text::{
 use crate::abi::types::*;
 
 /// # Safety
+/// Handles must be live, and `out_style` must be valid for writes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn snow_viewport_get_serial_number_creation_style(
+    runtime: SnowRuntime,
+    viewport: SnowViewport,
+    out_style: *mut SnowSerialNumberStyle,
+) -> SnowError {
+    ffi_error(|| {
+        if out_style.is_null() {
+            return SnowError::InvalidArgument;
+        }
+        ffi_status(with_runtime_viewport_ref(
+            runtime,
+            viewport,
+            |engine, id| {
+                let style = engine
+                    .viewport_serial_number_creation_style(id)
+                    .map_err(SnowError::from)?;
+                write_out(out_style, style.into());
+                Ok(())
+            },
+        ))
+    })
+}
+
+/// Resolves the same label and geometry used when a serial number is created.
+/// # Safety
+/// `style` and `out_diameter` must be valid; `out_label` must hold `capacity` bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn snow_serial_number_preview(
+    style: *const SnowSerialNumberStyle,
+    out_label: *mut u8,
+    capacity: u32,
+    out_diameter: *mut f64,
+) -> SnowError {
+    ffi_error(|| {
+        if style.is_null() || out_label.is_null() || out_diameter.is_null() {
+            return SnowError::InvalidArgument;
+        }
+        let style = unsafe { *style };
+        if !style.font_size.is_finite() || style.font_size <= 0.0 {
+            return SnowError::InvalidArgument;
+        }
+        let label = snow_draw_engine_document::format_serial_number(
+            style.number.max(0),
+            snow_serial_number_numeric_type_to_rust(style.numeric_type),
+        );
+        if label.len() >= capacity as usize {
+            return SnowError::InvalidArgument;
+        }
+        unsafe {
+            std::ptr::copy_nonoverlapping(label.as_ptr(), out_label, label.len());
+            *out_label.add(label.len()) = 0;
+        }
+        write_out(
+            out_diameter,
+            snow_draw_engine_document::resolve_serial_number_style_diameter(
+                style.number,
+                style.font_size,
+            ),
+        );
+        SnowError::Ok
+    })
+}
+
+/// # Safety
 /// `runtime` must be null or a live runtime handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn snow_runtime_arrow_text_count(runtime: SnowRuntime) -> u32 {
@@ -1016,6 +1082,29 @@ pub unsafe extern "C" fn snow_scene_resolve_serial_text_connection(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn serial_number_preview_uses_document_format_and_geometry() {
+        let mut style = SnowSerialNumberStyle::default();
+        style.number = 27;
+        style.numeric_type = SnowSerialNumberNumericType::UppercaseLetters;
+        style.font_size = 24.0;
+        let mut label = [0u8; 256];
+        let mut diameter = 0.0;
+        assert_eq!(
+            unsafe { snow_serial_number_preview(&style, label.as_mut_ptr(), 256, &mut diameter) },
+            SnowError::Ok
+        );
+        assert_eq!(&label[..3], b"AA\0");
+        assert_eq!(
+            diameter,
+            snow_draw_engine_document::resolve_serial_number_style_diameter(27, 24.0)
+        );
+        assert_eq!(
+            unsafe { snow_serial_number_preview(&style, label.as_mut_ptr(), 2, &mut diameter) },
+            SnowError::InvalidArgument
+        );
+    }
 
     fn zero_item() -> SnowSceneDisplayItem {
         unsafe { std::mem::zeroed() }

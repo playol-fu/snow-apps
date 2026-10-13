@@ -399,7 +399,8 @@ void ScreenshotToolPaletteStyleEditorComponent::finalizeRoot() {
     int visibleItems = 0;
     for (int index = 0; index < layout->count(); ++index) {
         QLayoutItem* item = layout->itemAt(index);
-        if (item == nullptr || item->widget() == nullptr) {
+        if (item == nullptr || item->widget() == nullptr ||
+            item->widget()->property("screenshotStyleEditorExcludedWidth").toBool()) {
             continue;
         }
         const int itemWidth = screenshotToolbarReferenceWidth(item->widget());
@@ -1344,10 +1345,13 @@ void ScreenshotToolPaletteFontEditor::build(QBoxLayout* layout, QWidget* parent,
     m_sizeSlider->setAccessibleName(QCoreApplication::translate(
         "ScreenshotToolPalette", config.summaryTooltip.toUtf8().constData()));
     m_sizeSlider->setVisible(config.sizeSlider);
+    m_sizeSlider->setProperty("screenshotStyleEditorExcludedWidth", !config.sizeSlider);
     m_sizeSlider->setFixedWidth(qMax(1, qRound(120.0 * metrics.physicalScale)));
+    stampScreenshotToolbarReferenceWidth(m_sizeSlider, 120);
     layout->addWidget(m_sizeSlider);
     for (auto* preset : m_sizePresets) {
         preset->setVisible(!config.sizeSlider);
+        preset->setProperty("screenshotStyleEditorExcludedWidth", config.sizeSlider);
     }
     QObject::connect(m_sizeSlider, &adqt::widgets::AdSlider::valueChanged, receiver,
                      [callback = m_setSize](double value) {
@@ -1465,6 +1469,7 @@ void ScreenshotToolPaletteFontEditor::rebind(const ScreenshotToolPaletteFontEdit
     }
     if (m_sizeSlider != nullptr) {
         m_sizeSlider->setVisible(config.sizeSlider);
+        m_sizeSlider->setProperty("screenshotStyleEditorExcludedWidth", !config.sizeSlider);
         configureScreenshotToolPaletteTooltip(
             m_sizeSlider, ScreenshotToolPaletteTranslationText(config.summaryTooltip));
         setScreenshotToolPaletteAccessibleNameSource(m_sizeSlider,
@@ -1474,6 +1479,7 @@ void ScreenshotToolPaletteFontEditor::rebind(const ScreenshotToolPaletteFontEdit
     }
     for (auto* preset : m_sizePresets) {
         preset->setVisible(!config.sizeSlider);
+        preset->setProperty("screenshotStyleEditorExcludedWidth", config.sizeSlider);
     }
     if (m_sizeSummary != nullptr) {
         configureScreenshotToolPaletteTooltip(
@@ -1488,6 +1494,7 @@ void ScreenshotToolPaletteFontEditor::rebind(const ScreenshotToolPaletteFontEdit
                                  : ScreenshotToolPaletteTranslationText(QString::number(value)));
     }
     configureStylePopupTrigger(m_familySelect, config.accessibleName);
+    finalizeRoot();
 }
 
 void ScreenshotToolPaletteFontEditor::refreshMetrics(

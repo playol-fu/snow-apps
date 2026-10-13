@@ -816,6 +816,8 @@ pub enum SerialNumberType {
     OutlinedSquare = 2,
     SolidSquare = 3,
     Circle = 4,
+    SolidCircleWhiteOutline = 5,
+    SolidCircleBlackOutline = 6,
 }
 
 impl SerialNumberType {
@@ -828,7 +830,13 @@ impl SerialNumberType {
     }
 
     pub fn is_solid(self) -> bool {
-        matches!(self, Self::SolidCircle | Self::SolidSquare)
+        matches!(
+            self,
+            Self::SolidCircle
+                | Self::SolidSquare
+                | Self::SolidCircleWhiteOutline
+                | Self::SolidCircleBlackOutline
+        )
     }
 }
 

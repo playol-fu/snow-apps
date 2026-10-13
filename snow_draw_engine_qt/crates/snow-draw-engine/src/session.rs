@@ -516,6 +516,8 @@ mod tests {
             SerialNumberType::OutlinedSquare,
             SerialNumberType::SolidSquare,
             SerialNumberType::Circle,
+            SerialNumberType::SolidCircleWhiteOutline,
+            SerialNumberType::SolidCircleBlackOutline,
         ] {
             let mut typed_engine = Engine::new(RuntimeEngineConfig::default());
             let typed_id = typed_engine.model.peek_next_element_id();

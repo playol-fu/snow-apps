@@ -1004,6 +1004,14 @@
             <translation>Solid circle</translation>
         </message>
         <message>
+            <source>Solid circle with black outline</source>
+            <translation>Solid circle with black outline</translation>
+        </message>
+        <message>
+            <source>Solid circle with white outline</source>
+            <translation>Solid circle with white outline</translation>
+        </message>
+        <message>
             <source>Solid fill</source>
             <translation>Solid fill</translation>
         </message>

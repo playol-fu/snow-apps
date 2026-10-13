@@ -257,7 +257,9 @@ QBrush fillBrushForStyle(const SnowColorRgba8& color, SnowFillStyle style) {
 }
 
 bool serialNumberIsSolid(const SnowSceneDisplayItem& item) {
-    return item.serial_number_type == SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE ||
+    return item.serial_number_type == SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE_WHITE_OUTLINE ||
+           item.serial_number_type == SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE_BLACK_OUTLINE ||
+           item.serial_number_type == SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE ||
            item.serial_number_type == SNOW_SERIAL_NUMBER_TYPE_SOLID_SQUARE;
 }
 
@@ -960,6 +962,18 @@ void drawSerialNumberItem(QPainter& painter, const SceneDisplayInfo& displayInfo
         painter.setPen(Qt::NoPen);
         painter.setBrush(toQColor(item.stroke));
         painter.drawPath(solidPath);
+        const bool whiteOutline =
+            item.serial_number_type == SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE_WHITE_OUTLINE;
+        const bool blackOutline =
+            item.serial_number_type == SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE_BLACK_OUTLINE;
+        if (whiteOutline || blackOutline) {
+            // Keep the border inside the existing badge extent, including its hit bounds.
+            const double borderWidth = qMin(diameter / 3.0, qMax(1.0 * zoom, strokeWidth));
+            painter.setPen(QPen(whiteOutline ? QColor(Qt::white) : QColor(Qt::black), borderWidth));
+            painter.setBrush(Qt::NoBrush);
+            const double inset = borderWidth / 2.0;
+            painter.drawEllipse(solidRect.adjusted(inset, inset, -inset, -inset));
+        }
         drawSerialNumberText(painter, item, localRect, zoom, strokeWidth);
         painter.restore();
         return;
@@ -1838,6 +1852,51 @@ bool drawTextHoverOverlay(QPainter& painter, const SceneDisplayInfo* sceneDispla
 
 namespace {
 void renderSceneItemsImpl(const SceneRenderRequest& request);
+}
+
+QImage serialNumberPreview(const SnowSerialNumberStyle& style, double zoom,
+                           qreal devicePixelRatio) {
+    std::uint8_t label[256]{};
+    double diameter = 0.0;
+    if (snow_serial_number_preview(&style, label, sizeof(label), &diameter) != SNOW_OK) {
+        return {};
+    }
+    const double dpr =
+        std::isfinite(devicePixelRatio) && devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
+    zoom = std::isfinite(zoom) && zoom > 0.0 ? zoom : 1.0;
+    // Bound native cursor allocation for legacy oversized badges or extreme canvas zoom.
+    zoom = qMin(zoom, 256.0 / qMax(1.0, diameter + qMax(0.0, style.stroke_width)));
+    const int size =
+        qMax(5, static_cast<int>(std::ceil((diameter + qMax(0.0, style.stroke_width)) * zoom)) + 4);
+    QImage image(QSize(qCeil(size * dpr), qCeil(size * dpr)), QImage::Format_ARGB32_Premultiplied);
+    image.setDevicePixelRatio(dpr);
+    image.fill(Qt::transparent);
+    SnowSceneDisplayItem item{};
+    item.width = diameter;
+    item.height = diameter;
+    item.serial_number_type = static_cast<std::uint8_t>(style.serial_number_type);
+    item.serial_number = style.number;
+    item.stroke = style.color;
+    item.text_color = style.color;
+    item.fill = style.fill;
+    item.fill_style = style.fill_style;
+    item.stroke_style = style.stroke_style;
+    item.stroke_width = style.stroke_width;
+    item.font_size = style.font_size;
+    item.font_family_utf8 = style.font_family_utf8;
+    item.font_family_utf8_len = qMin(style.font_family_utf8_len,
+                                     static_cast<std::uint32_t>(SNOW_FONT_FAMILY_UTF8_CAPACITY));
+    item.text_utf8 = reinterpret_cast<const char*>(label);
+    item.text_utf8_len = static_cast<std::uint32_t>(std::strlen(item.text_utf8));
+    item.opacity = style.opacity;
+    SceneDisplayInfo info{};
+    info.surface_width = size;
+    info.surface_height = size;
+    info.camera_zoom = zoom;
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+    drawSerialNumberItem(painter, info, item);
+    return image;
 }
 
 QColor toQColor(const SnowColorRgba8& color) {

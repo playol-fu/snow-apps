@@ -197,7 +197,9 @@ typedef enum SnowSerialNumberType {
     SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE = 1,
     SNOW_SERIAL_NUMBER_TYPE_OUTLINED_SQUARE = 2,
     SNOW_SERIAL_NUMBER_TYPE_SOLID_SQUARE = 3,
-    SNOW_SERIAL_NUMBER_TYPE_CIRCLE = 4
+    SNOW_SERIAL_NUMBER_TYPE_CIRCLE = 4,
+    SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE_WHITE_OUTLINE = 5,
+    SNOW_SERIAL_NUMBER_TYPE_SOLID_CIRCLE_BLACK_OUTLINE = 6
 } SnowSerialNumberType;
 
 #ifdef __cplusplus
@@ -588,6 +590,14 @@ typedef struct SnowSerialNumberStyle {
     char font_family_utf8[SNOW_FONT_FAMILY_UTF8_CAPACITY];
     SnowSerialNumberNumericType numeric_type;
 } SnowSerialNumberStyle;
+
+/* Creation style includes the next number, independent of the selected badge. */
+SnowError snow_viewport_get_serial_number_creation_style(SnowRuntime runtime, SnowViewport viewport,
+                                                         SnowSerialNumberStyle* out_style);
+
+/* Writes a NUL-terminated UTF-8 label and the badge diameter used during creation. */
+SnowError snow_serial_number_preview(const SnowSerialNumberStyle* style, uint8_t* out_label,
+                                     uint32_t capacity, double* out_diameter);
 
 typedef enum SnowDistanceUnit {
     SNOW_DISTANCE_UNIT_PX = 0,

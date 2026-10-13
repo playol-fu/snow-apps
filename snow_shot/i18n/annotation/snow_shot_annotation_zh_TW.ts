@@ -1004,6 +1004,14 @@
             <translation>實心圓形</translation>
         </message>
         <message>
+            <source>Solid circle with black outline</source>
+            <translation>黑色外框實心圓</translation>
+        </message>
+        <message>
+            <source>Solid circle with white outline</source>
+            <translation>白色外框實心圓</translation>
+        </message>
+        <message>
             <source>Solid fill</source>
             <translation>純色填充</translation>
         </message>

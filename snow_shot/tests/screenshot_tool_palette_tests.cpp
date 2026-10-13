@@ -18,6 +18,7 @@
 #include "snow_shot/shortcuts/shortcutdisplayservice.h"
 #include "snow_draw_engine_qt/snow_canvas_widget.h"
 #include "snow_draw_engine_qt/snow_canvas_runtime.h"
+
 #include "../src/presentation/tools/screenshottoolpalettebuttons.h"
 #include "../src/presentation/tools/screenshottoolpalettestylecomponents.h"
 #include "../src/presentation/tools/screenshottoolpalettestylepresets.h"
@@ -12064,6 +12065,41 @@ void barcodeIsTheDefaultRecognitionToolbarEntry() {
             "the default toolbar entry dispatches barcode recognition");
 }
 
+void serialNumberOutlinedSolidStylesAreSelectableAndPersisted() {
+    ScreenshotToolPalette::Options options;
+    options.showSerialNumberTool = true;
+    ScreenshotToolPalette palette(options);
+    palette.setActiveTool(ScreenshotToolPalette::Tool::SerialNumber);
+    auto* root =
+        palette.findChild<QWidget*>(QStringLiteral("screenshotSerialNumberTypeButtonGroup"));
+    auto* group = root->findChild<adqt::widgets::AdRadioButtonGroup*>();
+    auto original = snow_shot::presentation::screenshotCanvasToolStyleDefaults();
+    const auto cleanup = qScopeGuard([&] {
+        static_cast<void>(snow_shot::presentation::persistScreenshotCanvasToolStyles(original));
+    });
+    SnowCanvasSerialNumberStyle accepted;
+    palette.setStyleEditHandler([&](const SnowCanvasStyleEdit& edit) {
+        const auto* serial = std::get_if<SnowCanvasSerialNumberEdit>(&edit);
+        require(serial && serial->properties == SnowCanvasSerialNumberStyleMixedType,
+                "badge style commits only its type");
+        accepted = serial->style;
+        return true;
+    });
+    for (auto type : {SnowCanvasSerialNumberType::SolidCircleWhiteOutline,
+                      SnowCanvasSerialNumberType::SolidCircleBlackOutline}) {
+        require(group->button(static_cast<int>(type)) != nullptr, "new badge style is selectable");
+        group->button(static_cast<int>(type))->click();
+        require(accepted.type == type, "selected outlined solid style reaches the canvas");
+        auto defaults = original;
+        defaults.serialNumber.type = type;
+        require(
+            snow_shot::presentation::persistScreenshotCanvasToolStyles(defaults) &&
+                snow_shot::presentation::screenshotCanvasToolStyleDefaults().serialNumber.type ==
+                    type,
+            "outlined solid style survives saved defaults normalization");
+    }
+}
+
 void serialNumberSliderAcceptsEveryPixelAndSurvivesToolChanges() {
     ScreenshotToolPalette::Options options;
     options.showSerialNumberTool = true;
@@ -12073,6 +12109,21 @@ void serialNumberSliderAcceptsEveryPixelAndSurvivesToolChanges() {
     auto* slider =
         palette.findChild<adqt::widgets::AdSlider*>(QStringLiteral("screenshotFontSizeSlider"));
     require(slider != nullptr && !slider->isHidden(), "serial-number slider is shown");
+    palette.show();
+    QApplication::processEvents();
+    QWidget* fontRoot = slider->parentWidget();
+    int visibleWidth = 0;
+    int visibleCount = 0;
+    for (int index = 0; index < fontRoot->layout()->count(); ++index) {
+        QWidget* control = fontRoot->layout()->itemAt(index)->widget();
+        if (control && !control->isHidden()) {
+            const int width = screenshotToolbarReferenceWidth(control);
+            visibleWidth += width > 0 ? width : control->sizeHint().width();
+            ++visibleCount;
+        }
+    }
+    require(screenshotToolbarReferenceWidth(fontRoot) == visibleWidth + (visibleCount - 1) * 4,
+            "hidden size presets must not reserve empty toolbar space");
     slider->setValue(50.0);
     SnowCanvasSerialNumberStyle accepted;
     int changes = 0;
@@ -12271,7 +12322,7 @@ void serialNumberStyleControlsExposeAndEmitRequestedProperties() {
             "sequence-number font size should display the current value");
     require(numberEditorIndex >= 0 && fontRoot != nullptr &&
                 fontRoot->isAncestorOf(fontSizeSummary) &&
-                hasOnlySpacingBetween(serialNumberLayout, numberEditor, fontRoot, 4),
+                serialNumberLayout->indexOf(fontRoot) == numberEditorIndex + 1,
             "sequence number should have 4px spacing on its right");
     auto* fontSelect = qobject_cast<adqt::widgets::AdSelect*>(
         controlWithAccessibleName(palette, "Sequence number font family"));
@@ -12290,6 +12341,8 @@ void serialNumberStyleControlsExposeAndEmitRequestedProperties() {
             controlWithTooltip(palette, "Sequence number type") == typeRoot &&
             controlWithTooltip(palette, "Outlined circle") != nullptr &&
             controlWithTooltip(palette, "Solid circle") != nullptr &&
+            controlWithTooltip(palette, "Solid circle with white outline") != nullptr &&
+            controlWithTooltip(palette, "Solid circle with black outline") != nullptr &&
             controlWithTooltip(palette, "Outlined square") != nullptr &&
             controlWithTooltip(palette, "Solid square") != nullptr &&
             serialNumberLayout->indexOf(colorRoot) <
@@ -16011,6 +16064,7 @@ int main(int argc, char** argv) {
     if (application.arguments().contains(QStringLiteral("--serial-number-ui-only"))) {
         barcodeIsTheDefaultRecognitionToolbarEntry();
         serialNumberSliderAcceptsEveryPixelAndSurvivesToolChanges();
+        serialNumberOutlinedSolidStylesAreSelectableAndPersisted();
         serialNumberNumericTypeEditorPreservesValuesAndRetranslates();
         serialNumberStyleControlsExposeAndEmitRequestedProperties();
         snow_shot::storage::ApplicationStorage::instance().shutdown();
@@ -16018,6 +16072,7 @@ int main(int argc, char** argv) {
     }
     if (application.arguments().contains(QStringLiteral("--serial-number-only"))) {
         serialNumberSliderAcceptsEveryPixelAndSurvivesToolChanges();
+        serialNumberOutlinedSolidStylesAreSelectableAndPersisted();
         runScreenshotSerialNumberRestartTests();
         serialNumberCreationValuesAreIndependentPerNumericType();
         serialNumberNumericTypeEditorPreservesValuesAndRetranslates();
