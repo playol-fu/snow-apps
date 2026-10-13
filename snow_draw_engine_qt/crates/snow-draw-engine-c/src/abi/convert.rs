@@ -323,12 +323,6 @@ fn snow_arrowhead_primitive_kind_from_rust(
         ArrowheadDisplayPrimitiveKind::Line => SnowArrowheadPrimitiveKind::Line,
         ArrowheadDisplayPrimitiveKind::Polygon => SnowArrowheadPrimitiveKind::Polygon,
         ArrowheadDisplayPrimitiveKind::Circle => SnowArrowheadPrimitiveKind::Circle,
-        ArrowheadDisplayPrimitiveKind::SolidCircleWhiteOutline => {
-            SnowArrowheadPrimitiveKind::SolidCircleWhiteOutline
-        }
-        ArrowheadDisplayPrimitiveKind::SolidCircleBlackOutline => {
-            SnowArrowheadPrimitiveKind::SolidCircleBlackOutline
-        }
     }
 }
 

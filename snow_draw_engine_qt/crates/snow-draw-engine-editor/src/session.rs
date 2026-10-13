@@ -332,6 +332,10 @@ impl EditorSession {
         self.editor.text_style_mixed(document)
     }
 
+    pub fn serial_number_creation_style(&self) -> SerialNumberStyle {
+        self.editor.serial_number_creation_style()
+    }
+
     pub fn serial_number_style(&self, document: &DocumentModel) -> SerialNumberStyle {
         self.editor.serial_number_style(document)
     }
@@ -833,6 +837,26 @@ fn validate_persisted_editor_styles(persisted: &PersistedEditorSession) -> Resul
 #[cfg(test)]
 mod document_reset_tests {
     use super::*;
+
+    #[test]
+    fn serial_number_creation_style_is_available_through_session() {
+        let mut session = EditorSession::new(EngineConfig::default()).unwrap();
+        session.editor.state.default_serial_number.number = 42;
+        session.editor.state.default_serial_number.font_size = 24.0;
+        session
+            .editor
+            .state
+            .default_serial_number
+            .serial_number_type =
+            snow_draw_engine_document::SerialNumberType::SolidCircleWhiteOutline;
+        let style = session.serial_number_creation_style();
+        assert_eq!(style.number, 42);
+        assert_eq!(style.font_size, 24.0);
+        assert_eq!(
+            style.serial_number_type,
+            snow_draw_engine_document::SerialNumberType::SolidCircleWhiteOutline
+        );
+    }
 
     #[test]
     fn document_reset_releases_layouts_and_preserves_creation_styles() {
