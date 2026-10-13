@@ -365,6 +365,35 @@ void settingsSchemaDefaultsAndValidationAreComplete() {
     const auto defaultValue = [](const char* key) {
         return storage::ConfigurationSchema::defaultValue(QString::fromLatin1(key));
     };
+    require(defaultValue("screenshot_toolbar/table_qr_tool").toString() == QStringLiteral("qr"),
+            "barcode is the default recognition entry");
+    const auto actionDefault = defaultValue("screenshot_toolbar/action_tools_layout").toObject();
+    auto oldPositions = actionDefault.value(QStringLiteral("positions")).toArray();
+    auto oldStack = oldPositions.first().toArray();
+    require(oldStack.last() == QStringLiteral("barcode-recognition"),
+            "the default action stack exposes barcode recognition");
+    const QJsonValue barcode = oldStack[4];
+    oldStack[4] = oldStack[3];
+    oldStack[3] = barcode;
+    oldPositions[0] = oldStack;
+    auto oldDefault = actionDefault;
+    oldDefault.insert(QStringLiteral("positions"), oldPositions);
+    const auto migrated = storage::ConfigurationSchema::normalize(
+        QStringLiteral("screenshot_toolbar/action_tools_layout"), oldDefault);
+    require(migrated.valid && migrated.value.toObject() == actionDefault,
+            "the previous stock toolbar migrates to the barcode entry");
+    const QJsonValue secondPosition = oldPositions[1];
+    oldPositions[1] = oldPositions[2];
+    oldPositions[2] = secondPosition;
+    oldDefault.insert(QStringLiteral("positions"), oldPositions);
+    const auto customized = storage::ConfigurationSchema::normalize(
+        QStringLiteral("screenshot_toolbar/action_tools_layout"), oldDefault);
+    require(customized.valid && customized.value.toObject()
+                                        .value(QStringLiteral("positions"))
+                                        .toArray()[0]
+                                        .toArray()
+                                        .last() == QStringLiteral("table-recognition"),
+            "customized toolbar stacks preserve their entry choices");
     require(storage::ConfigurationSchema::defaultValue(
                 QStringLiteral("screen_recording_shortcuts/export"))
                     .toArray() == QJsonArray{QStringLiteral("Ctrl+R")},
@@ -965,8 +994,8 @@ void screenshotUiSchemaRepairsStructuredValues() {
                  QJsonArray{
                      QJsonArray{
                          QStringLiteral("convert-to-html"), QStringLiteral("convert-to-markdown"),
-                         QStringLiteral("latex-recognition"), QStringLiteral("barcode-recognition"),
-                         QStringLiteral("table-recognition")},
+                         QStringLiteral("latex-recognition"), QStringLiteral("table-recognition"),
+                         QStringLiteral("barcode-recognition")},
                      QJsonArray{QStringLiteral("record-screen")},
                      QJsonArray{QStringLiteral("pin-to-screen")},
                      QJsonArray{QStringLiteral("text-recognition")},

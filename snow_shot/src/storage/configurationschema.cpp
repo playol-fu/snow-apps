@@ -120,8 +120,8 @@ QVector<QStringList> defaultDrawingToolbarPositions() {
 QVector<QStringList> defaultActionToolbarPositions() {
     return editionActionPositions({
         {QStringLiteral("convert-to-html"), QStringLiteral("convert-to-markdown"),
-         QStringLiteral("latex-recognition"), QStringLiteral("barcode-recognition"),
-         QStringLiteral("table-recognition")},
+         QStringLiteral("latex-recognition"), QStringLiteral("table-recognition"),
+         QStringLiteral("barcode-recognition")},
         {QStringLiteral("record-screen")},
         {QStringLiteral("pin-to-screen")},
         {QStringLiteral("text-recognition")},
@@ -147,8 +147,8 @@ const QStringList kPinnedActionToolbarItemIds = editionActionIds(
 QVector<QStringList> defaultPinnedActionToolbarPositions() {
     return editionActionPositions({
         {QStringLiteral("convert-to-html"), QStringLiteral("convert-to-markdown"),
-         QStringLiteral("latex-recognition"), QStringLiteral("barcode-recognition"),
-         QStringLiteral("table-recognition")},
+         QStringLiteral("latex-recognition"), QStringLiteral("table-recognition"),
+         QStringLiteral("barcode-recognition")},
         {QStringLiteral("text-recognition")},
         {QStringLiteral("text-translation")},
         {QStringLiteral("separator")},
@@ -1185,7 +1185,7 @@ const QVector<ConfigurationSchemaEntry> kRawEntries = {
      {QStringLiteral("pen_highlight"), QStringLiteral("highlight"), QStringLiteral("spotlight")}},
 #if SNOW_SHOT_ENABLE_TABLE_RECOGNITION || SNOW_SHOT_ENABLE_QR_RECOGNITION
     {QStringLiteral("screenshot_toolbar/table_qr_tool"),
-     QStringLiteral("table"),
+     QStringLiteral("qr"),
      ConfigurationValueKind::String,
      std::nullopt,
      {QStringLiteral("table"), QStringLiteral("qr")}},
@@ -2118,6 +2118,15 @@ normalizeToolbarLayout(const QJsonValue& value, const QStringList& itemIds,
                 positions[recognitionPosition].push_back(id);
                 positioned.insert(id);
             }
+        }
+    }
+    // Change only the old stock stack; preserve customized positions and hidden tools.
+    auto previousStockDefault = defaultPositions;
+    if (!previousStockDefault.isEmpty() && previousStockDefault[0].size() == 5 &&
+        previousStockDefault[0].last() == QStringLiteral("barcode-recognition")) {
+        previousStockDefault[0].swapItemsAt(3, 4);
+        if (legacyDefaults && hidden.isEmpty() && positions == previousStockDefault) {
+            positions = defaultPositions;
         }
     }
     // Upgrade the previous default recognition group, preserving custom arrangements.

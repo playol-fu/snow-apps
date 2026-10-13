@@ -432,8 +432,8 @@ editorDescriptors(storage::ScreenshotToolbarLayoutKind kind) {
 [[nodiscard]] inline QVector<QStringList> actionDefaultPositions() {
     return editionActionPositions({
         {QStringLiteral("convert-to-html"), QStringLiteral("convert-to-markdown"),
-         QStringLiteral("latex-recognition"), QStringLiteral("barcode-recognition"),
-         QStringLiteral("table-recognition")},
+         QStringLiteral("latex-recognition"), QStringLiteral("table-recognition"),
+         QStringLiteral("barcode-recognition")},
         {QStringLiteral("record-screen")},
         {QStringLiteral("pin-to-screen")},
         {QStringLiteral("text-recognition")},
@@ -462,8 +462,8 @@ defaultPositions(storage::ScreenshotToolbarLayoutKind kind) {
     if (kind == storage::ScreenshotToolbarLayoutKind::PinnedActionTools) {
         return editionActionPositions({
             {QStringLiteral("convert-to-html"), QStringLiteral("convert-to-markdown"),
-             QStringLiteral("latex-recognition"), QStringLiteral("barcode-recognition"),
-             QStringLiteral("table-recognition")},
+             QStringLiteral("latex-recognition"), QStringLiteral("table-recognition"),
+             QStringLiteral("barcode-recognition")},
             {QStringLiteral("text-recognition")},
             {QStringLiteral("text-translation")},
             {QStringLiteral("separator")},
@@ -645,6 +645,15 @@ normalizedLayout(const storage::ScreenshotToolbarLayout& input, const QStringLis
                 result.positions[recognitionPosition].push_back(itemId);
                 positioned.insert(itemId);
             }
+        }
+    }
+    // Change only the old stock stack; preserve customized positions and hidden tools.
+    auto previousStockDefault = defaultLayout;
+    if (!previousStockDefault.isEmpty() && previousStockDefault[0].size() == 5 &&
+        previousStockDefault[0].last() == QStringLiteral("barcode-recognition")) {
+        previousStockDefault[0].swapItemsAt(3, 4);
+        if (legacyDefaults && result.hidden.isEmpty() && result.positions == previousStockDefault) {
+            result.positions = defaultLayout;
         }
     }
     // Upgrade the previous default recognition group, preserving custom arrangements.

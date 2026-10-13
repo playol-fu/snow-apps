@@ -12041,6 +12041,29 @@ void serialNumberNumericTypeEditorPreservesValuesAndRetranslates() {
     }
 }
 
+void barcodeIsTheDefaultRecognitionToolbarEntry() {
+    const snow_shot::storage::ScreenshotToolbarSettings settings;
+    const auto original = settings.tableQrTool();
+    const auto cleanup = qScopeGuard([&] { static_cast<void>(settings.setTableQrTool(original)); });
+    require(settings.setTableQrTool(QStringLiteral("qr")), "initialize default barcode mode");
+    ScreenshotToolPalette::Options options;
+    options.showTableTool = true;
+    options.showQrTool = true;
+    ScreenshotToolPalette palette(options);
+    palette.setTableEnabled(true);
+    palette.setQrEnabled(true);
+    int barcodes = 0;
+    int tables = 0;
+    QObject::connect(&palette, &ScreenshotToolPalette::qrRequested, [&] { ++barcodes; });
+    QObject::connect(&palette, &ScreenshotToolPalette::tableRequested, [&] { ++tables; });
+    auto* trigger =
+        qobject_cast<QAbstractButton*>(controlWithTooltip(palette, "Barcode recognition"));
+    require(trigger && !trigger->isHidden(), "the recognition stack exposes Barcode by default");
+    trigger->click();
+    require(barcodes == 1 && tables == 0,
+            "the default toolbar entry dispatches barcode recognition");
+}
+
 void serialNumberSliderAcceptsEveryPixelAndSurvivesToolChanges() {
     ScreenshotToolPalette::Options options;
     options.showSerialNumberTool = true;
@@ -15986,6 +16009,7 @@ int main(int argc, char** argv) {
         return 0;
     }
     if (application.arguments().contains(QStringLiteral("--serial-number-ui-only"))) {
+        barcodeIsTheDefaultRecognitionToolbarEntry();
         serialNumberSliderAcceptsEveryPixelAndSurvivesToolChanges();
         serialNumberNumericTypeEditorPreservesValuesAndRetranslates();
         serialNumberStyleControlsExposeAndEmitRequestedProperties();
