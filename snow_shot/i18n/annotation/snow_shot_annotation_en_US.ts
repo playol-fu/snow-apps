@@ -172,10 +172,6 @@
             <translation>Center vertically</translation>
         </message>
         <message>
-            <source>Chinese numerals</source>
-            <translation>Chinese numerals</translation>
-        </message>
-        <message>
             <source>Circle</source>
             <translation>Circle</translation>
         </message>

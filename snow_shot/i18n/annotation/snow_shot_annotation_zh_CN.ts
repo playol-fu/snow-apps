@@ -172,10 +172,6 @@
             <translation>垂直居中</translation>
         </message>
         <message>
-            <source>Chinese numerals</source>
-            <translation>中文数字</translation>
-        </message>
-        <message>
             <source>Circle</source>
             <translation>圆形</translation>
         </message>

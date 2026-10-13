@@ -2692,10 +2692,6 @@ QWidget* ScreenshotToolPaletteStyleControls::buildSerialNumberFamily(
          ScreenshotToolPaletteTranslationText(
              QT_TRANSLATE_NOOP("ScreenshotToolPalette", "Uppercase letters")),
          custom_outlined_icons::SequenceNumberNumericUppercaseLetters()},
-        {static_cast<int>(SnowCanvasSerialNumberNumericType::Chinese),
-         ScreenshotToolPaletteTranslationText(
-             QT_TRANSLATE_NOOP("ScreenshotToolPalette", "Chinese numerals")),
-         custom_outlined_icons::SequenceNumberNumericChinese()},
     };
     serialNumberNumericTypeConfig.initialId =
         static_cast<int>(m_state.m_serialNumberStyle.numericType);
@@ -2727,7 +2723,7 @@ QWidget* ScreenshotToolPaletteStyleControls::buildSerialNumberFamily(
         m_serialNumberNumericTypeButtonGroup, &adqt::widgets::AdRadioButtonGroup::checkedIdChanged,
         controls, [this](int id) {
             if (id >= static_cast<int>(SnowCanvasSerialNumberNumericType::Arabic) &&
-                id <= static_cast<int>(SnowCanvasSerialNumberNumericType::Chinese)) {
+                id <= static_cast<int>(SnowCanvasSerialNumberNumericType::UppercaseLetters)) {
                 setSerialNumberNumericType(static_cast<SnowCanvasSerialNumberNumericType>(id));
             }
         });

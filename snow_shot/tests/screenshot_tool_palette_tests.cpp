@@ -11921,8 +11921,8 @@ void serialNumberCreationValuesAreIndependentPerNumericType() {
     auto* input = qobject_cast<adqt::widgets::AdLineEdit*>(
         controlWithTooltip(palette, "Sequence number (scroll to adjust)"));
     require(group != nullptr && input != nullptr, "sequence creation editors exist");
-    const qint64 numbers[] = {12, 20, 27, 35, 44};
-    for (int index = 0; index < 5; ++index) {
+    const qint64 numbers[] = {12, 20, 27, 35};
+    for (int index = 0; index < 4; ++index) {
         group->button(index)->click();
         require(input->text() == QStringLiteral("1"),
                 "a newly selected numeric type starts with its own creation value");
@@ -11944,7 +11944,7 @@ void serialNumberCreationValuesAreIndependentPerNumericType() {
                         Numeric(index),
                 "creation advances the editor value for the active numeric type");
     }
-    for (int index = 0; index < 5; ++index) {
+    for (int index = 0; index < 4; ++index) {
         group->button(index)->click();
         require(input->text() == QString::number(numbers[index] + 1) &&
                     palette.creationStyleDefaults().serialNumber.number == numbers[index] + 1,
@@ -11972,8 +11972,9 @@ void serialNumberNumericTypeEditorPreservesValuesAndRetranslates() {
         return root->findChild<adqt::widgets::AdRadioButtonGroup*>();
     };
     auto* group = findGroup();
-    require(group && group->buttons().size() == 5 && group->checkedId() == 0,
-            "numeric format group starts with five choices and Arabic selected");
+    require(group && group->buttons().size() == 4 && group->checkedId() == 0,
+            "numeric format group starts with four choices and Arabic selected");
+    require(group->button(4) == nullptr, "Chinese numerals are not offered in the editor");
     int changes = 0;
     palette.setStyleEditHandler([&](const SnowCanvasStyleEdit& edit) {
         const auto* serial = std::get_if<SnowCanvasSerialNumberEdit>(&edit);
@@ -11986,8 +11987,8 @@ void serialNumberNumericTypeEditorPreservesValuesAndRetranslates() {
         return true;
     });
     const char* labels[] = {"Arabic numerals", "Roman numerals", "Lowercase letters",
-                            "Uppercase letters", "Chinese numerals"};
-    for (int i = 1; i < 5; ++i) {
+                            "Uppercase letters"};
+    for (int i = 1; i < 4; ++i) {
         require(group->button(i)->accessibleName() == QString::fromLatin1(labels[i]),
                 "format buttons have descriptive accessible names");
         group->button(i)->click();
@@ -12002,12 +12003,12 @@ void serialNumberNumericTypeEditorPreservesValuesAndRetranslates() {
         SnowCanvasSerialNumberStyleMixedNumericType | SnowCanvasSerialNumberStyleMixedNumber;
     palette.setStyleToolbarState(state);
     require(group->checkedId() == -1, "mixed numeric formats select no button");
-    group->button(4)->click();
-    require(changes == 5, "choosing the representative mixed format still commits");
+    group->button(3)->click();
+    require(changes == 4, "choosing the representative mixed format still commits");
     state.serialNumberStyleMixed = 0;
     state.serialNumberStyle.type = SnowCanvasSerialNumberType::Circle;
     palette.setStyleToolbarState(state);
-    require(!group->button(0)->isEnabled() && group->checkedId() == 4,
+    require(!group->button(0)->isEnabled() && group->checkedId() == 3,
             "unnumbered circles disable format editing and retain the format");
     state.serialNumberStyle.type = SnowCanvasSerialNumberType::OutlinedSquare;
     palette.setStyleToolbarState(state);
@@ -12016,13 +12017,13 @@ void serialNumberNumericTypeEditorPreservesValuesAndRetranslates() {
     palette.setActiveTool(ScreenshotToolPalette::Tool::Text);
     palette.setActiveTool(ScreenshotToolPalette::Tool::SerialNumber);
     group = findGroup();
-    require(group->checkedId() == 4, "format survives editor recreation and DPI changes");
+    require(group->checkedId() == 3, "format survives editor recreation and DPI changes");
     auto& language = snow_shot::presentation::LanguageManager::instance();
     for (const auto& locale :
          {QStringLiteral("zh_CN"), QStringLiteral("zh_TW"), QStringLiteral("en_US")}) {
         require(language.setLanguage(locale), "numeric format translation catalog loads");
         QCoreApplication::processEvents();
-        require(group == findGroup() && group->checkedId() == 4,
+        require(group == findGroup() && group->checkedId() == 3,
                 "language changes preserve the editor");
         const QString translated =
             QCoreApplication::translate("ScreenshotToolPalette", "Roman numerals");
