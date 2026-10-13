@@ -21,6 +21,7 @@ class AdButton;
 class AdColorPicker;
 class AdPopover;
 class AdSelect;
+class AdSlider;
 } // namespace adqt::widgets
 
 namespace snow_shot::presentation {
@@ -346,6 +347,7 @@ struct ScreenshotToolPaletteFontEditorConfig {
     QVector<double> sizeValues;
     std::function<ScreenshotToolPaletteTranslationText(int index, double value)> presetTooltip;
     bool observePopup = false;
+    bool sizeSlider = false;
 };
 
 // Font editor: size summary button, S/M/L/XL size presets and a searchable
@@ -375,6 +377,7 @@ class ScreenshotToolPaletteFontEditor final : public ScreenshotToolPaletteStyleE
 
   private:
     NumericValuePreviewButton* m_sizeSummary = nullptr;
+    adqt::widgets::AdSlider* m_sizeSlider = nullptr;
     QVector<adqt::widgets::AdButton*> m_sizePresets;
     QVector<double> m_sizeValues;
     adqt::widgets::AdSelect* m_familySelect = nullptr;

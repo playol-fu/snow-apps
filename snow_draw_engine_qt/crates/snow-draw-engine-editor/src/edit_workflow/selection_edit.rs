@@ -1221,10 +1221,10 @@ mod tests {
         );
 
         let preview_rect = preview.elements[0].rect;
-        assert_close(preview_rect.width, 15.0);
-        assert_close(preview_rect.height, 15.0);
-        assert_close(preview.bounds.width, 15.0);
-        assert_close(preview.bounds.height, 15.0);
+        assert_close(preview_rect.width, 2.5);
+        assert_close(preview_rect.height, 2.5);
+        assert_close(preview.bounds.width, 2.5);
+        assert_close(preview.bounds.height, 2.5);
         assert_close(
             serial_number_with_selection_rect(&serial, preview_rect).font_size,
             MIN_SERIAL_NUMBER_FONT_SIZE,

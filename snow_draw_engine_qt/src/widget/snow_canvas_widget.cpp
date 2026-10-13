@@ -2981,7 +2981,7 @@ SnowCanvasWidget::Impl::FontWheelTarget SnowCanvasWidget::Impl::fontWheelTarget(
 bool SnowCanvasWidget::Impl::stepSerialNumberFontSize(bool increase) {
     auto style = widget.canvasStyleToolbarState().serialNumberStyle;
     const double next = std::clamp(style.fontSize + (increase ? 1.0 : -1.0),
-                                   snow_canvas_style_limits::minimumFontSize,
+                                   snow_canvas_style_limits::minimumSerialNumberFontSize,
                                    snow_canvas_style_limits::maximumBadgeFontSize);
     if (next == style.fontSize && (widget.canvasStyleToolbarState().serialNumberStyleMixed &
                                    SnowCanvasSerialNumberStyleMixedFontSize) == 0)

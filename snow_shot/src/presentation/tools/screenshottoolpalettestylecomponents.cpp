@@ -7,6 +7,7 @@
 #include "widgets/control_scale.h"
 #include "widgets/popover.h"
 #include "widgets/select.h"
+#include "widgets/slider.h"
 
 #include <QBoxLayout>
 #include <QCoreApplication>
@@ -1329,6 +1330,32 @@ void ScreenshotToolPaletteFontEditor::build(QBoxLayout* layout, QWidget* parent,
                          });
     }
 
+    m_sizeSlider = new adqt::widgets::AdSlider(parent);
+    m_sizeSlider->setObjectName(QStringLiteral("screenshotFontSizeSlider"));
+    m_sizeSlider->setRange(1.0, 50.0);
+    m_sizeSlider->setSingleStep(1.0);
+    m_sizeSlider->setPageStep(5.0);
+    m_sizeSlider->setValue(initialSize);
+    m_sizeSlider->setFocusPolicy(Qt::StrongFocus);
+    configureScreenshotToolPaletteTooltip(
+        m_sizeSlider, ScreenshotToolPaletteTranslationText(config.summaryTooltip));
+    setScreenshotToolPaletteAccessibleNameSource(m_sizeSlider,
+                                                 config.summaryTooltip.toUtf8().constData());
+    m_sizeSlider->setAccessibleName(QCoreApplication::translate(
+        "ScreenshotToolPalette", config.summaryTooltip.toUtf8().constData()));
+    m_sizeSlider->setVisible(config.sizeSlider);
+    m_sizeSlider->setFixedWidth(qMax(1, qRound(120.0 * metrics.physicalScale)));
+    layout->addWidget(m_sizeSlider);
+    for (auto* preset : m_sizePresets) {
+        preset->setVisible(!config.sizeSlider);
+    }
+    QObject::connect(m_sizeSlider, &adqt::widgets::AdSlider::valueChanged, receiver,
+                     [callback = m_setSize](double value) {
+                         if (callback != nullptr && *callback) {
+                             (*callback)(value);
+                         }
+                     });
+
     ScreenshotToolPaletteSelectEditorConfig selectConfig;
     selectConfig.accessibleName = config.accessibleName;
     selectConfig.placeholder = QStringLiteral("Font family");
@@ -1385,6 +1412,11 @@ void ScreenshotToolPaletteFontEditor::update(double size, const QString& family,
                                              bool familyMixed, quint32 groups, quint32 sizeGroup,
                                              quint32 familyGroup) {
     if ((groups & sizeGroup) != 0) {
+        if (m_sizeSlider != nullptr) {
+            const QSignalBlocker blocker(m_sizeSlider);
+            m_sizeSlider->setValue(size);
+            m_sizeSlider->setProperty("mixed", sizeMixed);
+        }
         if (m_sizeSummary != nullptr) {
             m_sizeSummary->setValue(size);
             m_sizeSummary->setMixed(sizeMixed);
@@ -1431,6 +1463,18 @@ void ScreenshotToolPaletteFontEditor::rebind(const ScreenshotToolPaletteFontEdit
     if (m_setFamily != nullptr) {
         *m_setFamily = setFamily;
     }
+    if (m_sizeSlider != nullptr) {
+        m_sizeSlider->setVisible(config.sizeSlider);
+        configureScreenshotToolPaletteTooltip(
+            m_sizeSlider, ScreenshotToolPaletteTranslationText(config.summaryTooltip));
+        setScreenshotToolPaletteAccessibleNameSource(m_sizeSlider,
+                                                     config.summaryTooltip.toUtf8().constData());
+        m_sizeSlider->setAccessibleName(QCoreApplication::translate(
+            "ScreenshotToolPalette", config.summaryTooltip.toUtf8().constData()));
+    }
+    for (auto* preset : m_sizePresets) {
+        preset->setVisible(!config.sizeSlider);
+    }
     if (m_sizeSummary != nullptr) {
         configureScreenshotToolPaletteTooltip(
             m_sizeSummary, ScreenshotToolPaletteTranslationText(config.summaryTooltip));
@@ -1460,12 +1504,16 @@ void ScreenshotToolPaletteFontEditor::refreshMetrics(
             configureScreenshotToolPaletteStyleButton(button, nullptr, metrics);
         }
     }
+    if (applies(m_sizeSlider)) {
+        m_sizeSlider->setFixedWidth(qMax(1, qRound(120.0 * metrics.physicalScale)));
+    }
     ScreenshotToolPaletteSelectEditor selectEditor;
     selectEditor.select = m_familySelect;
     configureScreenshotToolPaletteSelectEditor(selectEditor, metrics);
 }
 
 void ScreenshotToolPaletteFontEditor::release() {
+    m_sizeSlider = nullptr;
     m_sizeSummary = nullptr;
     m_sizePresets.clear();
     m_sizeValues.clear();

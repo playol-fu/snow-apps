@@ -3529,6 +3529,14 @@ mod tests {
     }
 
     #[test]
+    fn serial_number_style_accepts_one_pixel_font_size() {
+        let mut style = SerialNumberStyle::from_serial_number(&SerialNumberData::default());
+        style.font_size = 1.0;
+
+        assert_eq!(validate_serial_number_style(&style), Ok(()));
+    }
+
+    #[test]
     fn serial_number_style_rejects_font_size_below_minimum() {
         let mut style = SerialNumberStyle::from_serial_number(&SerialNumberData::default());
         style.font_size = MIN_SERIAL_NUMBER_FONT_SIZE - 0.1;

@@ -482,9 +482,9 @@ SnowCanvasStyleDefaults screenshotCanvasToolStyleDefaults() {
         bounded(defaults.text.cornerRadii.bottomRight, 0.0, 83.0);
     defaults.text.cornerRadii.bottomLeft = bounded(defaults.text.cornerRadii.bottomLeft, 0.0, 83.0);
     defaults.text.opacity = bounded(defaults.text.opacity, 0.0, 1.0);
-    defaults.serialNumber.fontSize =
-        bounded(defaults.serialNumber.fontSize, snow_canvas_style_limits::minimumFontSize,
-                snow_canvas_style_limits::maximumBadgeFontSize);
+    defaults.serialNumber.fontSize = bounded(defaults.serialNumber.fontSize,
+                                             snow_canvas_style_limits::minimumSerialNumberFontSize,
+                                             snow_canvas_style_limits::maximumBadgeFontSize);
     defaults.serialNumber.strokeWidth = bounded(defaults.serialNumber.strokeWidth, 0.0, 72.0);
     defaults.serialNumber.opacity = bounded(defaults.serialNumber.opacity, 0.0, 1.0);
     defaults.watermark.fontSize =

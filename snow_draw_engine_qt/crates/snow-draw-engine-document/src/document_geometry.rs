@@ -9,7 +9,7 @@ use snow_draw_engine_core::{
 };
 
 pub const MIN_TEXT_FONT_SIZE: f64 = 6.0;
-pub const MIN_SERIAL_NUMBER_FONT_SIZE: f64 = MIN_TEXT_FONT_SIZE;
+pub const MIN_SERIAL_NUMBER_FONT_SIZE: f64 = 1.0;
 const MIN_SERIAL_NUMBER_BOUND_TEXT_GAP: f64 = 18.0;
 const SERIAL_NUMBER_BOUND_TEXT_GAP_PER_FONT_SIZE: f64 = MIN_SERIAL_NUMBER_BOUND_TEXT_GAP / 21.0;
 const SERIAL_NUMBER_CANONICAL_FONT_SIZE: f64 = 16.0;
@@ -2090,6 +2090,7 @@ mod tests {
 
     #[test]
     fn serial_number_font_size_accepts_minimum() {
+        assert_eq!(MIN_SERIAL_NUMBER_FONT_SIZE, 1.0);
         let serial = SerialNumberData {
             font_size: MIN_SERIAL_NUMBER_FONT_SIZE,
             ..SerialNumberData::default()
@@ -2118,7 +2119,7 @@ mod tests {
             ..SerialNumberData::default()
         };
 
-        assert_eq!(serial_number_minimum_selection_scale(&serial), 0.375);
+        assert_eq!(serial_number_minimum_selection_scale(&serial), 0.0625);
     }
 
     #[test]
@@ -2176,7 +2177,7 @@ mod tests {
         );
 
         assert_eq!(updated.font_size, MIN_SERIAL_NUMBER_FONT_SIZE);
-        assert_eq!(updated.diameter, 15.0);
+        assert_eq!(updated.diameter, 2.5);
     }
 
     #[test]

@@ -25,6 +25,7 @@
 
 #include "antd_icons.h"
 #include "widgets/select.h"
+#include "widgets/slider.h"
 #include "theme/theme_manager.h"
 
 #include <QApplication>
@@ -12039,6 +12040,63 @@ void serialNumberNumericTypeEditorPreservesValuesAndRetranslates() {
     }
 }
 
+void serialNumberSliderAcceptsEveryPixelAndSurvivesToolChanges() {
+    ScreenshotToolPalette::Options options;
+    options.showSerialNumberTool = true;
+    options.showTextTool = true;
+    ScreenshotToolPalette palette(options);
+    palette.setActiveTool(ScreenshotToolPalette::Tool::SerialNumber);
+    auto* slider =
+        palette.findChild<adqt::widgets::AdSlider*>(QStringLiteral("screenshotFontSizeSlider"));
+    require(slider != nullptr && !slider->isHidden(), "serial-number slider is shown");
+    slider->setValue(50.0);
+    SnowCanvasSerialNumberStyle accepted;
+    int changes = 0;
+    palette.setStyleEditHandler([&](const SnowCanvasStyleEdit& edit) {
+        const auto* serial = std::get_if<SnowCanvasSerialNumberEdit>(&edit);
+        require(serial && serial->properties == SnowCanvasSerialNumberStyleMixedFontSize,
+                "slider commits only font size");
+        accepted = serial->style;
+        ++changes;
+        return true;
+    });
+    for (int size = 1; size <= 50; ++size) {
+        const int before = changes;
+        slider->setValue(size);
+        require(changes == before + 1 && accepted.fontSize == size,
+                "every pixel size from 1 to 50 is accepted");
+    }
+    SnowCanvasStyleToolbarState state;
+    state.source = SnowCanvasStyleToolbarSource::SelectedSerialNumber;
+    state.serialNumberStyle = accepted;
+    state.serialNumberStyle.fontSize = 13.0;
+    const int before = changes;
+    palette.setStyleToolbarState(state);
+    require(slider->value() == 13.0 && changes == before,
+            "selection synchronization updates the slider without committing an edit");
+    palette.setActiveTool(ScreenshotToolPalette::Tool::Text);
+    auto* textSlider =
+        palette.findChild<adqt::widgets::AdSlider*>(QStringLiteral("screenshotFontSizeSlider"));
+    require(textSlider && textSlider->isHidden(),
+            "Text keeps its preset buttons instead of the serial-number slider");
+    palette.setActiveTool(ScreenshotToolPalette::Tool::SerialNumber);
+    slider =
+        palette.findChild<adqt::widgets::AdSlider*>(QStringLiteral("screenshotFontSizeSlider"));
+    require(slider && !slider->isHidden() && slider->value() == 13.0,
+            "returning to Serial number restores the slider and selected size");
+    auto defaults = snow_shot::presentation::screenshotCanvasToolStyleDefaults();
+    const auto original = defaults;
+    const auto cleanup = qScopeGuard([&] {
+        static_cast<void>(snow_shot::presentation::persistScreenshotCanvasToolStyles(original));
+    });
+    defaults.serialNumber.fontSize = 1.0;
+    require(
+        snow_shot::presentation::persistScreenshotCanvasToolStyles(defaults) &&
+            snow_shot::presentation::screenshotCanvasToolStyleDefaults().serialNumber.fontSize ==
+                1.0,
+        "the one-pixel creation size survives persisted defaults normalization");
+}
+
 void serialNumberStyleControlsExposeAndEmitRequestedProperties() {
     ScreenshotToolPalette::Options options;
     options.showTextTool = true;
@@ -12239,8 +12297,13 @@ void serialNumberStyleControlsExposeAndEmitRequestedProperties() {
                          emittedStyle = style;
                          ++changeCount;
                      });
-    clickStyleControl(palette, "Sequence number font size 54px");
-    require(changeCount == 1 && qFuzzyCompare(emittedStyle.fontSize + 1.0, 55.0) &&
+    auto* sizeSlider =
+        fontRoot->findChild<adqt::widgets::AdSlider*>(QStringLiteral("screenshotFontSizeSlider"));
+    require(sizeSlider != nullptr && !sizeSlider->isHidden() && sizeSlider->minimum() == 1.0 &&
+                sizeSlider->maximum() == 50.0 && sizeSlider->singleStep() == 1.0,
+            "sequence-number size uses a 1-50 px slider with one-pixel steps");
+    sizeSlider->setValue(37.0);
+    require(changeCount == 1 && qFuzzyCompare(emittedStyle.fontSize + 1.0, 38.0) &&
                 emittedStyle.number == 12 && emittedStyle.color == state.serialNumberStyle.color &&
                 emittedStyle.fill == state.serialNumberStyle.fill,
             "sequence-number controls should emit the complete updated style");
@@ -12282,7 +12345,7 @@ void serialNumberStyleControlsExposeAndEmitRequestedProperties() {
     QApplication::sendEvent(numberInput, &circleWheel);
     require(changeCount == circleChangeCount && emittedStyle.number == 12,
             "Circle should ignore number commits and wheel changes");
-    clickStyleControl(palette, "Sequence number font size 30px");
+    sizeSlider->setValue(30.0);
     require(changeCount == circleChangeCount + 1 && emittedStyle.fontSize == 30.0,
             "Circle font size should remain editable");
     clickStyleControl(palette, "Cross-line sequence number fill");
@@ -15921,7 +15984,15 @@ int main(int argc, char** argv) {
         snow_shot::storage::ApplicationStorage::instance().shutdown();
         return 0;
     }
+    if (application.arguments().contains(QStringLiteral("--serial-number-ui-only"))) {
+        serialNumberSliderAcceptsEveryPixelAndSurvivesToolChanges();
+        serialNumberNumericTypeEditorPreservesValuesAndRetranslates();
+        serialNumberStyleControlsExposeAndEmitRequestedProperties();
+        snow_shot::storage::ApplicationStorage::instance().shutdown();
+        return 0;
+    }
     if (application.arguments().contains(QStringLiteral("--serial-number-only"))) {
+        serialNumberSliderAcceptsEveryPixelAndSurvivesToolChanges();
         runScreenshotSerialNumberRestartTests();
         serialNumberCreationValuesAreIndependentPerNumericType();
         serialNumberNumericTypeEditorPreservesValuesAndRetranslates();

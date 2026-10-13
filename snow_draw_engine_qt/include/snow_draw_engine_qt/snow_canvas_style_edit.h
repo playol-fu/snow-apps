@@ -7,6 +7,7 @@
 
 namespace snow_canvas_style_limits {
 inline constexpr double minimumFontSize = 6.0;
+inline constexpr double minimumSerialNumberFontSize = 1.0;
 inline constexpr double maximumTextFontSize = 256.0;
 inline constexpr double maximumBadgeFontSize = 512.0;
 inline constexpr double maximumWatermarkFontSize = 512.0;

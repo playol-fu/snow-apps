@@ -2783,6 +2783,7 @@ QWidget* ScreenshotToolPaletteStyleControls::buildSerialNumberFamily(
     serialNumberFontConfig.summaryTooltip = QStringLiteral("Current sequence number font size");
     serialNumberFontConfig.sizeValues = m_state.m_textStyle.fontSizeValues();
     serialNumberFontConfig.observePopup = true;
+    serialNumberFontConfig.sizeSlider = true;
     serialNumberFontConfig.presetTooltip = [](int, double value) {
         return ScreenshotToolPaletteTranslationText("Sequence number font size %1px")
             .arg(value, 0, 'g', 3);
@@ -5648,8 +5649,8 @@ void ScreenshotToolPaletteStyleControls::setSerialNumber(qint64 number) {
 void ScreenshotToolPaletteStyleControls::setSerialNumberFontSize(double fontSize) {
     if (!std::isfinite(fontSize))
         return;
-    const double clamped = std::clamp(fontSize, snow_canvas_style_limits::minimumFontSize,
-                                      snow_canvas_style_limits::maximumBadgeFontSize);
+    const double clamped = std::clamp(std::round(fontSize),
+                                      snow_canvas_style_limits::minimumSerialNumberFontSize, 50.0);
     commitSerialNumberProperty(SnowCanvasSerialNumberStyleMixedFontSize,
                                [clamped](SnowCanvasSerialNumberStyle& style) {
                                    if (qFuzzyCompare(style.fontSize + 1.0, clamped + 1.0)) {
@@ -5661,16 +5662,9 @@ void ScreenshotToolPaletteStyleControls::setSerialNumberFontSize(double fontSize
 }
 
 void ScreenshotToolPaletteStyleControls::cycleSerialNumberFontSize() {
-    const QVector<double>& values = m_state.m_textStyle.fontSizeValues();
-    for (double value : values) {
-        if (value > m_state.m_serialNumberStyle.fontSize) {
-            setSerialNumberFontSize(value);
-            return;
-        }
-    }
-    if (!values.isEmpty()) {
-        setSerialNumberFontSize(values.first());
-    }
+    setSerialNumberFontSize(m_state.m_serialNumberStyle.fontSize >= 50.0
+                                ? 1.0
+                                : m_state.m_serialNumberStyle.fontSize + 1.0);
 }
 
 void ScreenshotToolPaletteStyleControls::setSerialNumberFontFamily(const QString& fontFamily) {
